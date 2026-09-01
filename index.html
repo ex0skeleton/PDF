@@ -3,805 +3,860 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PDF Wiz — Image to PDF</title>
+<title>PDF Wiz</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-:root{
-    --orange:#ff7900;
-    --orange-hover:#e96f00;
-    --orange-soft:#fff1e4;
-    --bg:#f3f4f6;
-    --panel:#ffffff;
-    --text:#181a1f;
-    --muted:#767d87;
-    --border:#e2e5e9;
-    --shadow:0 8px 28px rgba(15,23,42,.07);
-    --settings-width:340px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;min-height:100%}
-body{
-    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    background:var(--bg);color:var(--text);overflow-x:hidden
-}
-button,select{font:inherit}
-.app{min-height:100vh;display:flex;flex-direction:column}
-.topbar{
-    height:66px;background:#fff;border-bottom:1px solid var(--border);
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 22px;position:sticky;top:0;z-index:40
-}
-.brand{display:flex;align-items:center;gap:11px}
-.brand-logo{
-    width:40px;height:40px;border-radius:12px;background:var(--orange);
-    display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:900
-}
-.brand-copy h1{margin:0;font-size:18px;line-height:1.1}
-.brand-copy p{margin:4px 0 0;color:var(--muted);font-size:11px}
-.top-stat{
-    padding:8px 12px;border-radius:9px;border:1px solid var(--border);
-    background:#f8f9fa;color:var(--muted);font-size:11px
-}
-.workspace-shell{
-    width:100%;flex:1;display:grid;grid-template-columns:minmax(0,1fr) var(--settings-width);
-    min-height:calc(100vh - 66px)
-}
-.workspace{min-width:0;padding:20px 22px 42px}
-.workspace-heading{
-    display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:16px
-}
-.workspace-heading h2{margin:0;font-size:17px}
-.workspace-subtitle{margin-top:5px;color:var(--muted);font-size:11px}
-.workspace-actions{display:flex;gap:7px;align-items:center}
-.utility-btn{
-    min-height:34px;padding:7px 11px;border:1px solid var(--border);border-radius:9px;
-    background:#fff;cursor:pointer;font-size:11px
-}
-.utility-btn:hover{background:#f9fafb}
-.utility-btn.danger{color:#d92d20}
-.initial-upload{
-    width:100%;min-height:calc(100vh - 145px);border:2px dashed #cdd2d9;border-radius:20px;
-    background:#fff;display:flex;align-items:center;justify-content:center;padding:40px;cursor:pointer;
-    transition:border-color .2s,background .2s
-}
-.initial-upload:hover,.initial-upload.dragging{border-color:var(--orange);background:#fffaf6}
-.initial-upload-content{text-align:center}
-.upload-icon{
-    width:70px;height:70px;margin:0 auto 16px;border-radius:18px;background:var(--orange-soft);
-    color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:500
-}
-.initial-upload h3{margin:0 0 8px;font-size:19px}
-.initial-upload p{margin:0;color:var(--muted);line-height:1.6;font-size:12px}
-.primary-select-btn{
-    margin-top:18px;padding:11px 17px;border:0;border-radius:10px;background:var(--orange);
-    color:#fff;cursor:pointer;font-size:12px;font-weight:800
-}
-.preview-grid{
-    display:none;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:17px;align-items:start
-}
-.preview-card{
-    min-width:0;background:#fff;border:1px solid var(--border);border-radius:15px;overflow:hidden;
-    box-shadow:var(--shadow);position:relative;transition:transform .15s,border-color .15s,box-shadow .15s
-}
-.preview-card:hover{transform:translateY(-2px);border-color:#ffbc80}
-.preview-card.drag-over{border-color:var(--orange);box-shadow:0 0 0 2px rgba(255,121,0,.12),var(--shadow)}
-.page-preview-stage{
-    width:100%;height:320px;padding:18px;background:#e8eaed;display:flex;
-    justify-content:center;align-items:center;overflow:hidden
-}
-.pdf-page-preview{
-    position:relative;flex:none;overflow:hidden;background:#fff;
-    box-shadow:0 5px 18px rgba(0,0,0,.18)
-}
-.pdf-page-preview.portrait[data-page="a4"]{height:276px;aspect-ratio:210/297}
-.pdf-page-preview.portrait[data-page="letter"]{height:276px;aspect-ratio:216/279}
-.pdf-page-preview.portrait[data-page="legal"]{height:276px;aspect-ratio:216/356}
-.pdf-page-preview.landscape[data-page="a4"]{width:min(100%,285px);aspect-ratio:297/210}
-.pdf-page-preview.landscape[data-page="letter"]{width:min(100%,285px);aspect-ratio:279/216}
-.pdf-page-preview.landscape[data-page="legal"]{width:min(100%,285px);aspect-ratio:356/216}
-.preview-margin-box{
-    position:absolute;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff
-}
-.preview-image{display:block;width:100%;height:100%;max-width:none;max-height:none}
-.preview-image.contain{object-fit:contain}
-.preview-image.cover{object-fit:cover}
-.preview-image.original{object-fit:contain}
-.preview-card-footer{border-top:1px solid #eceef1;padding:11px 12px 12px}
-.preview-file-name{
-    font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
-}
-.preview-file-meta{
-    margin-top:5px;display:flex;align-items:center;justify-content:space-between;
-    gap:8px;color:#969ca5;font-size:10px
-}
-.card-number{color:var(--orange);font-weight:800}
-.card-actions{
-    position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:5px;opacity:0;transition:opacity .15s
-}
-.preview-card:hover .card-actions{opacity:1}
-.card-btn{
-    width:29px;height:29px;padding:0;border:0;border-radius:8px;background:rgba(25,25,25,.77);
-    color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)
-}
-.card-btn:hover{background:#111}
-.card-btn.delete:hover{background:#c62828}
-.add-card{
-    min-height:383px;border:2px dashed #cbd1d8;border-radius:15px;background:#fafbfc;
-    display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer;
-    transition:border-color .2s,background .2s
-}
-.add-card:hover,.add-card.dragging{border-color:var(--orange);background:#fffaf6}
-.add-card-inner{text-align:center}
-.add-card-icon{
-    width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--orange-soft);
-    color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:25px
-}
-.add-card-title{font-size:13px;font-weight:800}
-.add-card-subtitle{margin-top:5px;color:var(--muted);font-size:10px}
-.settings-panel{
-    position:sticky;top:66px;height:calc(100vh - 66px);overflow-y:auto;padding:21px;background:#fff;
-    border-left:1px solid var(--border);z-index:30
-}
-.settings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:21px}
-.settings-header h2{margin:0;font-size:16px}
-.close-settings{
-    display:none;width:33px;height:33px;border:1px solid var(--border);border-radius:9px;background:#fff;cursor:pointer
-}
-.setting-section{margin-bottom:20px}
-.setting-title{
-    display:block;margin-bottom:9px;color:#4b525c;font-size:10px;font-weight:800;letter-spacing:.04em
-}
-select{
-    width:100%;height:40px;padding:0 10px;border:1px solid #d9dde3;border-radius:9px;
-    background:#fff;outline:0;color:#23262c
-}
-select:focus{border-color:var(--orange)}
-.orientation-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.orientation-option{
-    padding:11px 7px 10px;border:1px solid var(--border);border-radius:11px;background:#fff;cursor:pointer
-}
-.orientation-option.active{
-    background:#fff8f1;border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)
-}
-.orientation-visual-wrap{height:47px;display:flex;align-items:center;justify-content:center}
-.orientation-paper{
-    background:#fff;border:2px solid #777e87;border-radius:2px;box-shadow:2px 3px 0 #e4e7eb
-}
-.orientation-option.active .orientation-paper{border-color:var(--orange)}
-.portrait-icon{width:28px;height:40px}
-.landscape-icon{width:43px;height:29px}
-.orientation-label{margin-top:7px;text-align:center;font-size:10px;font-weight:800}
-.check-row{
-    display:flex;align-items:flex-start;gap:8px;color:#515863;font-size:10px;line-height:1.45
-}
-.check-row input{margin-top:2px;accent-color:var(--orange)}
-.settings-divider{height:1px;margin:20px 0;background:#eceef1}
-.summary{padding:12px;border-radius:11px;background:#f7f8fa}
-.summary-line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:10px}
-.summary-label{color:var(--muted)}
-.summary-value{font-weight:800}
-.download-btn{
-    width:100%;min-height:46px;margin-top:14px;border:0;border-radius:11px;background:var(--orange);
-    color:#fff;cursor:pointer;font-size:12px;font-weight:900
-}
-.download-btn:hover{background:var(--orange-hover)}
-.download-btn:disabled{cursor:not-allowed;opacity:.4}
-.processing{display:none;margin-top:9px;text-align:center;color:var(--muted);font-size:10px}
-.mobile-gear{display:none}
-.settings-overlay{
-    position:fixed;inset:66px 0 0;z-index:69;pointer-events:none;opacity:0;
-    background:rgba(25,30,38,.17);backdrop-filter:blur(3px);transition:opacity .25s
-}
-.settings-overlay.open{opacity:1;pointer-events:auto}
-.mobile-download-bar{display:none}
+:root{--bg:#101416;--panel:#191e21;--panel2:#21272b;--line:#30383e;--text:#f5f7f8;--muted:#94a0a8;--orange:#ff7900;--green:#2bc777;--danger:#ff6262;--side:360px;--shadow:0 18px 45px rgba(0,0,0,.28);--glow:0 0 0 1px rgba(255,121,0,.3),0 0 22px rgba(255,121,0,.13)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}button,select,input{font:inherit}.hidden{display:none!important}
+.topbar{height:68px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(16,20,22,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(18px)}
+.brand{display:flex;align-items:center;gap:11px;cursor:pointer}.brand-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,var(--orange),#ff5a00);display:grid;place-items:center;font-weight:950;color:#fff;box-shadow:0 0 24px rgba(255,121,0,.2)}.brand-copy h1{font-size:17px;margin:0}.brand-copy p{font-size:10px;color:var(--muted);margin:3px 0 0}.top-right{display:flex;align-items:center;gap:9px}.top-count,.home-btn{padding:8px 11px;border:1px solid var(--line);background:var(--panel);border-radius:9px;color:var(--muted);font-size:10px;font-weight:800}.home-btn{cursor:pointer;color:var(--text)}
+.home{min-height:calc(100vh - 68px);padding:46px 22px;display:flex;align-items:center;justify-content:center}.home-inner{width:min(980px,100%)}.hero{text-align:center;margin-bottom:34px}.hero .eyebrow{color:var(--orange);font-size:11px;font-weight:900;letter-spacing:.12em}.hero h2{font-size:clamp(30px,5vw,56px);line-height:1.02;margin:10px 0 12px}.hero p{max-width:650px;margin:0 auto;color:var(--muted);font-size:13px;line-height:1.7}.tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.tool-card{text-align:left;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),#151a1d);border-radius:18px;padding:23px;cursor:pointer;transition:.18s;box-shadow:var(--shadow);color:var(--text)}.tool-icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:rgba(255,121,0,.11);color:var(--orange);font-size:20px;font-weight:900;border:1px solid rgba(255,121,0,.2)}.tool-card h3{margin:17px 0 7px;font-size:17px}.tool-card p{margin:0;color:var(--muted);font-size:11px;line-height:1.6}.tool-card .go{margin-top:18px;color:var(--orange);font-size:10px;font-weight:900}
+.tool-view{display:none;min-height:calc(100vh - 68px)}.tool-view.active{display:block}.tool-layout{display:grid;grid-template-columns:minmax(0,1fr) var(--side);min-height:calc(100vh - 68px)}.main{padding:20px 22px 48px;min-width:0}.side{background:var(--panel);border-left:1px solid var(--line);padding:21px;position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto}.heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}.heading h2{margin:0;font-size:17px}.subtitle{margin-top:5px;color:var(--muted);font-size:10px}.actions{display:flex;gap:7px}.utility-btn{min-height:34px;padding:0 10px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:9px;cursor:pointer;font-size:10px;font-weight:800;transition:.18s}.utility-btn.danger{color:var(--danger)}
+.drop-box{min-height:285px;border:1px dashed #455059;background:linear-gradient(180deg,#171c1f,#14191c);border-radius:18px;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}.drop-box.dragging{border-color:var(--orange);box-shadow:var(--glow)}.drop-inner{position:relative;z-index:2}.drop-icon{width:64px;height:64px;margin:0 auto 15px;border-radius:16px;background:rgba(255,121,0,.11);border:1px solid rgba(255,121,0,.22);color:var(--orange);display:grid;place-items:center;font-size:20px;font-weight:950}.drop-box h3{margin:0 0 7px;font-size:18px}.drop-box p{margin:0;color:var(--muted);font-size:10px;line-height:1.65}.select-btn{margin-top:16px;min-height:40px;padding:0 15px;border:1px solid var(--orange);border-radius:10px;background:var(--orange);color:#fff;font-size:10px;font-weight:900;cursor:pointer;transition:.18s}
+.loader-overlay{position:absolute;inset:0;background:rgba(13,17,19,.94);z-index:10;display:none;align-items:center;justify-content:center;flex-direction:column}.loader-overlay.active{display:flex}.rocket-stage{height:150px;width:100px;position:relative}.rocket{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);font-size:44px;filter:drop-shadow(0 0 12px rgba(255,121,0,.3))}.flame{position:absolute;left:50%;bottom:17px;width:15px;height:28px;transform:translateX(-50%);border-radius:50% 50% 70% 70%;background:linear-gradient(#fff5cc,#ffac33 45%,#ff5a00 78%,transparent);animation:flame .16s infinite alternate}@keyframes flame{from{height:20px;opacity:.72;transform:translateX(-50%) scaleX(.8)}to{height:34px;opacity:1;transform:translateX(-50%) scaleX(1.15)}}.loader-overlay.launch .rocket,.loader-overlay.launch .flame{animation:launch .36s ease-in forwards}@keyframes launch{to{transform:translate(-50%,-185px);opacity:0}}.loader-text{font-size:10px;color:var(--muted);margin-top:-7px;font-weight:800}.loader-text strong{color:var(--orange)}
+.side-title{font-size:15px!important;margin:0!important}.setting{margin-bottom:19px}.label{display:block;margin-bottom:8px;font-size:9px;font-weight:900;letter-spacing:.07em;color:#a9b2b8}select,.number-input{width:100%;height:40px;background:#131719;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:0 10px;outline:0}select:focus,.number-input:focus{border-color:var(--orange)}.check{display:flex;gap:8px;align-items:flex-start;color:#aab3b9;font-size:9px;line-height:1.45}.check input{accent-color:var(--orange);margin-top:2px}.orientation-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.orientation-option{background:#14191b;border:1px solid var(--line);border-radius:11px;padding:10px 7px;cursor:pointer;transition:.18s;color:var(--text)}.orientation-option.active{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange);background:#211a14}.paper-wrap{height:46px;display:grid;place-items:center}.paper-icon{border:2px solid #7e898f;background:#22282c;border-radius:2px}.orientation-option.active .paper-icon{border-color:var(--orange)}.paper-icon.p{width:27px;height:39px}.paper-icon.l{width:43px;height:28px}.option-name{text-align:center;font-size:9px;font-weight:850;margin-top:6px}.range-row{display:flex;align-items:center;gap:9px}.range-row input{flex:1;accent-color:var(--orange)}.range-value{min-width:48px;text-align:center;padding:7px 5px;background:#131719;border:1px solid var(--line);border-radius:8px;font-size:9px;font-weight:900}.summary{background:#131719;border:1px solid #252c31;border-radius:11px;padding:11px}.summary-line{display:flex;justify-content:space-between;gap:9px;padding:5px 0;font-size:9px}.summary-line span:first-child{color:var(--muted)}.estimate{color:var(--orange)!important}.action-btn{width:100%;min-height:46px;margin-top:13px;border:1px solid var(--orange);border-radius:11px;background:var(--orange);color:#fff;font-size:11px;font-weight:950;cursor:pointer;transition:.18s}.action-btn:disabled{opacity:.35;cursor:not-allowed}.note{margin-top:13px;padding:10px;border:1px solid #30363a;background:#14191b;border-radius:10px;color:#89959d;font-size:8.5px;line-height:1.55}
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:15px;align-items:start}.preview-card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);touch-action:pan-y}.preview-card.dragging-card{opacity:.55}.preview-stage{height:315px;padding:17px;background:#111517;display:flex;align-items:center;justify-content:center;overflow:hidden}.page-preview{position:relative;background:#fff;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.32);flex:none}.page-preview.portrait[data-page=a4]{height:274px;aspect-ratio:210/297}.page-preview.portrait[data-page=letter]{height:274px;aspect-ratio:216/279}.page-preview.portrait[data-page=legal]{height:274px;aspect-ratio:216/356}.page-preview.landscape[data-page=a4]{width:min(100%,284px);aspect-ratio:297/210}.page-preview.landscape[data-page=letter]{width:min(100%,284px);aspect-ratio:279/216}.page-preview.landscape[data-page=legal]{width:min(100%,284px);aspect-ratio:356/216}.page-preview.image-size{max-width:100%;max-height:280px}.margin-box{position:absolute;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}.preview-image{width:100%;height:100%;display:block;max-width:none;max-height:none}.preview-image.contain,.preview-image.original{object-fit:contain}.preview-image.cover{object-fit:cover}.card-foot{padding:10px 11px;border-top:1px solid var(--line);background:#171c1f}.file-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:800}.file-meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:8.5px;margin-top:5px}.page-no{color:var(--orange);font-weight:900}.card-actions{position:absolute;right:7px;top:7px;display:flex;gap:4px;z-index:4;opacity:0}.card-btn{width:27px;height:27px;padding:0;border:1px solid #394147;border-radius:7px;background:rgba(18,22,24,.9);color:var(--text);cursor:pointer}.card-btn.delete{color:var(--danger)}.add-card{min-height:372px;border:1px dashed #465159;border-radius:14px;background:#151a1d;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:.18s}.add-icon{width:48px;height:48px;margin:0 auto 10px;border-radius:13px;background:rgba(255,121,0,.1);color:var(--orange);display:grid;place-items:center;font-size:23px;font-weight:900}.add-card strong{font-size:11px}.add-card p{font-size:8.5px;color:var(--muted);margin:5px 0 0}
+.pdf-card{display:none;background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden;box-shadow:var(--shadow)}.pdf-card.visible{display:block}.pdf-head{padding:14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}.pdf-icon{width:50px;height:60px;border-radius:9px;background:rgba(255,121,0,.1);border:1px solid rgba(255,121,0,.22);display:grid;place-items:center;color:var(--orange);font-size:12px;font-weight:950}.pdf-info{min-width:0;flex:1}.pdf-name{font-size:11px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pdf-meta{font-size:8.5px;color:var(--muted);margin-top:4px}.pdf-preview{min-height:400px;background:#111517;padding:15px;display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;align-items:start}.thumb{background:#1a1f22;border:1px solid var(--line);border-radius:9px;padding:7px}.thumb canvas{width:100%;height:auto;display:block;background:#fff;border-radius:3px}.thumb-label{text-align:center;color:var(--muted);font-size:8px;margin-top:6px;font-weight:800}.more{min-height:145px;border:1px dashed #414b52;border-radius:9px;display:grid;place-items:center;color:var(--muted);font-size:9px;text-align:center;padding:12px}.preset-grid{display:grid;gap:7px}.preset{text-align:left;border:1px solid var(--line);background:#131719;border-radius:10px;padding:10px;cursor:pointer;transition:.18s;color:var(--text)}.preset.active{border-color:var(--orange);background:#211a14;box-shadow:inset 0 0 0 1px var(--orange)}.preset strong{display:block;font-size:10px}.preset span{display:block;color:var(--muted);font-size:8px;margin-top:3px;line-height:1.4}.progress-wrap{display:none;margin-top:12px}.progress-wrap.active{display:block}.progress-track{height:8px;background:#2a3135;border-radius:999px;overflow:hidden}.progress-bar{height:100%;width:0;background:linear-gradient(90deg,var(--orange),#ffc15a);transition:width .15s}.progress-text{text-align:center;color:var(--muted);font-size:8.5px;margin-top:7px}.output{display:none;margin-top:12px;padding:11px;border:1px solid rgba(43,199,119,.3);background:rgba(43,199,119,.07);border-radius:10px}.output.visible{display:block}.output h4{margin:0;color:var(--green);font-size:10px}.output p{margin:6px 0 0;color:#a7b6ae;font-size:8.5px;line-height:1.6}.output button{width:100%;min-height:39px;margin-top:9px;border:0;border-radius:9px;background:var(--green);color:#07160e;font-size:9px;font-weight:950;cursor:pointer}
+.side-handle{display:none;position:fixed;right:0;top:42%;transform:translateY(-50%);z-index:115;width:48px;height:58px;border:1px solid #3b444a;border-right:0;border-radius:16px 0 0 16px;background:rgba(25,30,33,.96);align-items:center;justify-content:center;cursor:pointer;box-shadow:-5px 8px 24px rgba(0,0,0,.3)}.gear-svg{width:28px;height:28px;fill:var(--orange);animation:spin 34s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.drawer-overlay{display:none;position:fixed;inset:68px 0 0;z-index:109;background:rgba(0,0,0,.28);backdrop-filter:blur(3px)}.drawer-overlay.open{display:block}.close-drawer{display:none;width:32px;height:32px;border:1px solid var(--line);background:#151a1d;color:var(--text);border-radius:8px;cursor:pointer}.mobile-bottom{display:none}
+@media(hover:hover) and (pointer:fine){.home-btn:hover,.tool-card:hover,.utility-btn:hover,.select-btn:hover,.action-btn:hover,.orientation-option:hover,.preset:hover,.add-card:hover,.drop-box:hover,.side-handle:hover{border-color:rgba(255,121,0,.7);box-shadow:var(--glow);transform:translateY(-1px)}.preview-card:hover .card-actions{opacity:1}}
+@media(max-width:920px){#compressSide .output{display:none!important}.tool-layout{display:block}.main{padding:16px 14px 105px}.side{position:fixed;top:68px;right:0;bottom:0;width:min(78vw,370px);height:auto;z-index:120;transform:translateX(100%);transition:transform .26s ease;box-shadow:-18px 0 45px rgba(0,0,0,.36)}.side.open{transform:translateX(0)}.side-handle{display:flex}.close-drawer{display:grid;place-items:center}.mobile-bottom{display:block;position:fixed;left:0;right:0;bottom:0;z-index:105;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(16,20,22,.94);border-top:1px solid var(--line);backdrop-filter:blur(16px)}.mobile-bottom button{width:100%;min-height:47px;border:0;border-radius:11px;background:var(--orange);color:#fff;font-size:10px;font-weight:950}.mobile-bottom button:disabled{opacity:.35}.desktop-only-action{display:none}.card-actions{opacity:1}}
+@media(max-width:620px){.topbar{height:62px;padding:0 12px}.brand-mark{width:36px;height:36px;border-radius:10px}.brand-copy p{display:none}.top-count{font-size:8.5px;padding:7px 8px}.home-btn{font-size:8.5px;padding:7px 9px}.home{min-height:calc(100vh - 62px);padding:28px 12px}.tool-grid{grid-template-columns:1fr}.tool-view{min-height:calc(100vh - 62px)}.main{padding:14px 11px 100px}.side{top:62px;width:min(82vw,350px)}.drawer-overlay{inset:62px 0 0}.preview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.preview-stage{height:235px;padding:9px}.page-preview.portrait[data-page=a4],.page-preview.portrait[data-page=letter],.page-preview.portrait[data-page=legal]{height:207px}.page-preview.image-size{max-height:210px}.add-card{min-height:287px}.pdf-preview{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;min-height:270px;gap:9px}.drop-box{min-height:230px;padding:22px}.side-handle{top:42%;width:47px;height:56px}}
+@media(max-width:430px){.preview-grid{grid-template-columns:1fr}.preview-stage{height:320px}.page-preview.portrait[data-page=a4],.page-preview.portrait[data-page=letter],.page-preview.portrait[data-page=legal]{height:286px}.page-preview.image-size{max-height:288px}.add-card{min-height:150px}}
 
-/* Orange slowly spinning gear */
-.gear-svg{
-    width:31px;
-    height:31px;
-    display:block;
-    fill:var(--orange);
-    animation:extremelySlowSpin 32s linear infinite;
+/* =========================================================
+   QR WIZ GLASSMORPHISM THEME
+   palette/style aligned with uploaded QR Wiz
+========================================================= */
+:root{
+  --bg:#0a0a18;
+  --primary:#ffffff;
+  --orange:#ff6b2b;
+  --orange-2:#ff8c55;
+  --orange-glow:rgba(255,107,43,.2);
+  --blue:#1b1464;
+  --blue-mid:#2a1f8f;
+  --glass-bg:rgba(255,255,255,.045);
+  --glass-bg2:rgba(255,255,255,.07);
+  --glass-border:rgba(255,255,255,.10);
+  --glass-hover:rgba(255,255,255,.08);
+  --text:#f0f0ff;
+  --muted:#7878a0;
+  --panel:var(--glass-bg);
+  --panel-2:var(--glass-bg2);
+  --panel-3:rgba(255,255,255,.085);
+  --line:var(--glass-border);
+  --green:#39d98a;
+  --danger:#ff6f7d;
+  --shadow:0 8px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.07);
+  --glow:0 0 0 1px rgba(255,107,43,.22),0 6px 24px rgba(255,107,43,.16);
 }
-@keyframes extremelySlowSpin{
-    from{transform:rotate(0deg)}
-    to{transform:rotate(360deg)}
+body{background:var(--bg);position:relative}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 5% 15%,rgba(27,20,100,.65) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 45% at 95% 85%,rgba(255,107,43,.14) 0%,transparent 55%),
+    radial-gradient(ellipse 55% 55% at 50% 50%,rgba(10,10,30,.85) 0%,transparent 80%);
 }
+.topbar{
+  background:rgba(10,10,24,.72);
+  border-color:var(--glass-border);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)
+}
+.brand-mark,.select-btn,.action-btn,.mobile-bottom button{
+  background:linear-gradient(135deg,var(--orange) 0%,#e03000 100%)!important;
+  box-shadow:0 3px 18px rgba(255,107,43,.32)
+}
+.home-btn,.top-count,.utility-btn,.tool-card,.drop-box,.preview-card,.add-card,.pdf-card,
+.side,.summary,.preset,.orientation-option,.close-drawer,.side-handle,.output{
+  background:var(--glass-bg);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-color:var(--glass-border);
+}
+.tool-card,.preview-card,.pdf-card,.side,.drop-box,.add-card{
+  box-shadow:var(--shadow)
+}
+.preview-stage,.pdf-preview{background:rgba(0,0,12,.35)}
+.card-foot{background:rgba(255,255,255,.025);border-color:var(--glass-border)}
+select,.number-input,.range-value{
+  background:rgba(255,255,255,.055);border-color:var(--glass-border);color:var(--text)
+}
+select:focus,.number-input:focus{
+  border-color:var(--orange-2);background:rgba(255,255,255,.09);
+  box-shadow:0 0 0 3px rgba(255,107,43,.13)
+}
+select option{background:#1a1a35;color:var(--text)}
+.orientation-option.active,.preset.active{
+  background:rgba(255,107,43,.12);border-color:var(--orange);
+  box-shadow:inset 0 0 0 1px rgba(255,107,43,.45),0 2px 14px rgba(255,107,43,.12)
+}
+.drop-icon,.tool-icon,.add-icon,.pdf-icon{background:rgba(255,107,43,.10);border-color:rgba(255,107,43,.22)}
+.loader-overlay{background:rgba(10,10,24,.93);backdrop-filter:blur(10px)}
+.drawer-overlay{background:rgba(0,0,0,.42);backdrop-filter:blur(5px)}
+.mobile-bottom{background:rgba(10,10,24,.80);border-color:var(--glass-border);backdrop-filter:blur(20px)}
+@media(hover:hover) and (pointer:fine){
+  .home-btn:hover,.tool-card:hover,.utility-btn:hover,.select-btn:hover,.action-btn:hover,
+  .orientation-option:hover,.preset:hover,.add-card:hover,.drop-box:hover,.side-handle:hover,
+  .preview-card:hover,.thumb:hover{
+    border-color:rgba(255,140,85,.75);
+    box-shadow:0 10px 40px rgba(0,0,0,.38),0 0 22px rgba(255,107,43,.14),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+}
+@media(max-width:920px){
+  .tool-card:hover,.utility-btn:hover,.select-btn:hover,.action-btn:hover,
+  .orientation-option:hover,.preset:hover,.add-card:hover,.drop-box:hover,.side-handle:hover,
+  .preview-card:hover,.thumb:hover{transform:none;box-shadow:inherit}
+}
+
+/* Straight-up rocket */
+.rocket{
+  width:46px;height:72px;font-size:0!important;filter:drop-shadow(0 0 14px rgba(255,107,43,.3))
+}
+.rocket svg{display:block;width:46px;height:72px;overflow:visible}
+.loader-overlay.launch .rocket{animation:launchRocket .38s ease-in forwards}
+.loader-overlay.launch .flame{animation:launchFlame .38s ease-in forwards}
+@keyframes launchRocket{to{transform:translate(-50%,-190px);opacity:0}}
+@keyframes launchFlame{to{transform:translate(-50%,-190px) scaleY(1.4);opacity:0}}
+
+/* Sort */
+.sort-select{
+  min-height:34px;width:auto;min-width:135px;padding:0 28px 0 9px;
+  font-size:9px;border-radius:9px
+}
+
+/* Asset preview modal */
+.asset-modal{
+  position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;
+  padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)
+}
+.asset-modal.open{display:flex;animation:fadeIn .2s ease}
+.asset-modal-card{
+  width:min(94vw,1100px);height:min(90vh,850px);display:flex;flex-direction:column;
+  background:rgba(20,20,42,.82);border:1px solid var(--glass-border);border-radius:18px;
+  box-shadow:0 24px 80px rgba(0,0,0,.55);overflow:hidden
+}
+.asset-modal-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;
+  border-bottom:1px solid var(--glass-border)
+}
+.asset-modal-title{font-size:10px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.asset-modal-tools{display:flex;gap:6px}
+.asset-modal-tools button{
+  min-width:34px;height:34px;border-radius:9px;border:1px solid var(--glass-border);
+  background:var(--glass-bg2);color:var(--text);cursor:pointer
+}
+.asset-canvas{
+  flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;
+  padding:22px;touch-action:pan-x pan-y;background:rgba(0,0,0,.20)
+}
+.asset-canvas img,.asset-canvas canvas{
+  max-width:none;max-height:none;transform-origin:center center;transition:transform .1s ease;
+  box-shadow:0 12px 45px rgba(0,0,0,.45)
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* Better drag feedback */
+.preview-card.mobile-drag-active{
+  position:relative;z-index:40;opacity:.82;box-shadow:0 18px 60px rgba(0,0,0,.5),0 0 25px rgba(255,107,43,.18)
+}
+.preview-card.drag-target{outline:2px solid var(--orange);outline-offset:2px}
+
+/* Mobile compression result modal */
+.mobile-result-modal{
+  position:fixed;inset:0;z-index:5100;display:none;align-items:flex-end;justify-content:center;
+  padding:12px;background:rgba(0,0,0,.58);backdrop-filter:blur(8px)
+}
+.mobile-result-modal.open{display:flex;animation:resultFade .28s ease both}
+.mobile-result-card{
+  width:min(100%,440px);padding:18px;border-radius:18px;
+  background:rgba(20,20,42,.94);border:1px solid var(--glass-border);
+  box-shadow:0 24px 70px rgba(0,0,0,.5);animation:resultRise .32s cubic-bezier(.2,.8,.2,1) both
+}
+.mobile-result-icon{
+  width:48px;height:48px;border-radius:14px;background:rgba(57,217,138,.10);
+  border:1px solid rgba(57,217,138,.25);display:grid;place-items:center;color:var(--green);
+  margin-bottom:12px;font-weight:900
+}
+.mobile-result-card h3{margin:0 0 8px;font-size:16px}
+.mobile-result-info{
+  padding:11px;border:1px solid var(--glass-border);border-radius:11px;background:var(--glass-bg);
+  font-size:10px;line-height:1.75;color:#b8b8cf
+}
+.mobile-result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.mobile-result-actions button{
+  min-height:44px;border-radius:10px;font-size:10px;font-weight:900;cursor:pointer
+}
+.mobile-result-download{border:0;background:linear-gradient(135deg,var(--orange),#e03000);color:#fff}
+.mobile-result-back{border:1px solid var(--glass-border);background:var(--glass-bg2);color:var(--text)}
+@keyframes resultFade{from{opacity:0}to{opacity:1}}
+@keyframes resultRise{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+@media(min-width:921px){.mobile-result-modal{display:none!important}}
+
+
+/* ===== UX refinements ===== */
+.side-handle{position:fixed!important;right:0!important;top:42%!important;transform:translateY(-50%)!important;will-change:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.side-handle:active,.side-handle:focus,.side-handle:hover{transform:translateY(-50%)!important}
+@media(max-width:920px){
+  .side{background:rgba(14,14,34,.72)!important;backdrop-filter:blur(32px) saturate(132%)!important;-webkit-backdrop-filter:blur(32px) saturate(132%)!important;border-left:1px solid rgba(255,255,255,.16)!important;box-shadow:-18px 0 52px rgba(0,0,0,.46),inset 1px 0 0 rgba(255,255,255,.055)!important;transition:transform .34s cubic-bezier(.22,.8,.2,1)!important}
+  .side-handle:hover,.side-handle:focus,.side-handle:active{transform:translateY(-50%)!important}
+}
+.label{color:#c0c0d6!important}.check{color:#b2b2c9!important}.subtitle{color:#9a9ab8!important}.preset span,.tool-card p,.note,.summary-line span:first-child{color:#9f9fbb!important}
+.side::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(8,8,26,.16),rgba(8,8,26,.07));border-radius:inherit}.side>*{position:relative;z-index:1}
+.preview-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.preview-card img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+.preview-card.mobile-drag-active{opacity:.86;box-shadow:0 18px 60px rgba(0,0,0,.5),0 0 25px rgba(255,107,43,.18)!important}
+.preview-card .view-btn{color:var(--orange)}.preview-card .view-btn svg{width:14px;height:14px;display:block;fill:currentColor}
+.mobile-result-modal,.mobile-result-card{pointer-events:auto}
+
+
+.side-handle{
+  min-width:48px!important;
+  min-height:58px!important;
+  padding:0!important;
+  touch-action:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+.side-handle *{pointer-events:none!important}
+
 
 @media(max-width:920px){
-    .workspace-shell{display:block}
-    .workspace{padding:17px 15px 110px}
-    .top-stat{display:none}
-    .settings-panel{
-        position:fixed;top:66px;right:0;bottom:0;z-index:80;width:min(76vw,390px);height:auto;
-        transform:translateX(100%);transition:transform .28s ease;box-shadow:-15px 0 45px rgba(0,0,0,.17)
-    }
-    .settings-panel.open{transform:translateX(0)}
-    .close-settings{display:flex;align-items:center;justify-content:center}
-    .mobile-gear{
-        position:fixed;right:0;top:43%;transform:translateY(-50%);z-index:60;width:50px;height:58px;
-        border:1px solid #d7dbe0;border-right:0;border-radius:16px 0 0 16px;
-        background:rgba(255,255,255,.95);box-shadow:-5px 5px 18px rgba(0,0,0,.10);
-        cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)
-    }
-    .mobile-gear:hover{background:#fff}
-    .mobile-download-bar{
-        position:fixed;left:0;right:0;bottom:0;z-index:55;display:block;
-        padding:10px 13px calc(10px + env(safe-area-inset-bottom));
-        background:rgba(255,255,255,.94);border-top:1px solid var(--border);
-        backdrop-filter:blur(14px);box-shadow:0 -8px 30px rgba(0,0,0,.06)
-    }
-    .mobile-download-btn{
-        width:100%;min-height:48px;border:0;border-radius:12px;background:var(--orange);
-        color:#fff;font-weight:900;cursor:pointer
-    }
-    .mobile-download-btn:disabled{opacity:.4;cursor:not-allowed}
-    .settings-panel #downloadBtn{display:none}
-    .settings-panel #processing{display:none !important}
+  .preview-card,
+  .preview-card .preview-stage{
+    -webkit-touch-callout:none!important;
+    -webkit-user-select:none!important;
+    user-select:none!important;
+  }
+  .preview-card.mobile-drag-active{
+    opacity:.88!important;
+    transform:scale(.96);
+  }
 }
-@media(max-width:620px){
-    .topbar{height:60px;padding:0 13px}
-    .brand-logo{width:36px;height:36px;border-radius:10px;font-size:17px}
-    .brand-copy h1{font-size:16px}
-    .brand-copy p{display:none}
-    .workspace{padding:14px 12px 105px}
-    .workspace-heading{margin-bottom:12px}
-    .workspace-heading h2{font-size:15px}
-    .workspace-subtitle{font-size:9px}
-    .utility-btn{min-height:31px;padding:6px 8px;font-size:10px}
-    .initial-upload{min-height:calc(100vh - 125px);padding:25px}
-    .preview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .page-preview-stage{height:238px;padding:10px}
-    .pdf-page-preview.portrait[data-page="a4"],
-    .pdf-page-preview.portrait[data-page="letter"],
-    .pdf-page-preview.portrait[data-page="legal"]{height:210px}
-    .preview-card-footer{padding:9px 9px 10px}
-    .preview-file-name{font-size:10px}
-    .preview-file-meta{font-size:8px}
-    .card-actions{opacity:1;top:5px;right:5px}
-    .card-btn{width:25px;height:25px;border-radius:7px;font-size:10px}
-    .add-card{min-height:294px}
-    .settings-panel{top:60px;width:min(78vw,350px)}
-    .settings-overlay{inset:60px 0 0}
-    .mobile-gear{top:42%;width:48px;height:56px}
-    .gear-svg{width:29px;height:29px}
+
+
+.preview-card .view-btn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
 }
-@media(max-width:430px){
-    .preview-grid{grid-template-columns:1fr}
-    .page-preview-stage{height:330px}
-    .pdf-page-preview.portrait[data-page="a4"],
-    .pdf-page-preview.portrait[data-page="letter"],
-    .pdf-page-preview.portrait[data-page="legal"]{height:295px}
-    .add-card{min-height:155px}
+.preview-card .view-btn svg{
+  margin:auto!important;
 }
+
+
+.preview-card.mobile-drag-active{
+  outline:none!important;
+  border-color:var(--glass-border)!important;
+}
+
+
+/* ===== Reliable mobile drag clone ===== */
+.mobile-drag-ghost{
+  position:fixed!important;
+  z-index:6200!important;
+  pointer-events:none!important;
+  margin:0!important;
+  opacity:.92!important;
+  transform:scale(.94)!important;
+  transform-origin:center center!important;
+  box-shadow:0 22px 60px rgba(0,0,0,.55),0 0 28px rgba(255,107,43,.20)!important;
+  border-color:rgba(255,107,43,.55)!important;
+  transition:none!important;
+}
+.preview-card.drag-source{
+  opacity:.38!important;
+}
+.preview-card.drag-target{
+  outline:2px solid var(--orange)!important;
+  outline-offset:2px!important;
+  box-shadow:0 0 0 3px rgba(255,107,43,.10),0 12px 36px rgba(0,0,0,.35)!important;
+}
+
+
+/* ===== Native mobile long-press / active-state suppression ===== */
+.preview-card,
+.preview-card *,
+.preview-stage,
+.preview-stage *{
+  -webkit-tap-highlight-color:transparent!important;
+  -webkit-touch-callout:none!important;
+  -webkit-user-select:none!important;
+  user-select:none!important;
+  -webkit-user-drag:none!important;
+}
+.preview-card:active,
+.preview-card:focus,
+.preview-card:focus-visible,
+.preview-stage:active,
+.preview-stage:focus,
+.preview-stage:focus-visible{
+  filter:none!important;
+  opacity:1;
+  outline:none!important;
+  box-shadow:var(--shadow)!important;
+}
+.preview-card img{
+  pointer-events:none!important;
+}
+.preview-card button{
+  -webkit-tap-highlight-color:transparent!important;
+}
+.preview-card.drag-source{
+  opacity:.38!important;
+  filter:none!important;
+}
+.preview-card:not(.drag-source):not(.drag-target){
+  opacity:1!important;
+  filter:none!important;
+}
+
+
+/* ===== Mobile image-card scrolling vs drag =====
+   Normal vertical swipes scroll the page.
+   Only an activated long-press drag takes control of the gesture. */
+@media(max-width:920px){
+  .preview-card .preview-stage{
+    touch-action:pan-y!important;
+  }
+  .preview-card.drag-source .preview-stage{
+    touch-action:none!important;
+  }
+}
+
+
+/* ===== Stable mobile settings handle ===== */
+.side-handle{
+  -webkit-tap-highlight-color:transparent!important;
+  outline:none!important;
+  background:rgba(24,24,52,.78)!important;
+  backdrop-filter:blur(24px) saturate(125%)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(125%)!important;
+}
+.side-handle:focus,
+.side-handle:focus-visible,
+.side-handle:active{
+  outline:none!important;
+  background:rgba(24,24,52,.78)!important;
+  box-shadow:-5px 8px 24px rgba(0,0,0,.30)!important;
+  filter:none!important;
+}
+.side-handle *{
+  pointer-events:none!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+
+
+/* ===== Orange action buttons + light sweep ===== */
+.home-btn,
+.select-btn{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+}
+
+.home-btn{
+  border-color:transparent!important;
+  background:linear-gradient(135deg,var(--orange) 0%,#e03000 100%)!important;
+  color:#fff!important;
+  box-shadow:0 3px 18px rgba(255,107,43,.34)!important;
+}
+
+.home-btn::after,
+.select-btn::after{
+  content:"";
+  position:absolute;
+  top:-20%;
+  bottom:-20%;
+  left:-42%;
+  width:28%;
+  transform:skewX(-20deg);
+  background:linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,.10) 20%,
+    rgba(255,255,255,.58) 50%,
+    rgba(255,255,255,.10) 80%,
+    transparent 100%
+  );
+  pointer-events:none;
+  z-index:1;
+}
+
+.home-btn > *,
+.select-btn > *{
+  position:relative;
+  z-index:2;
+}
+
+@media (hover:hover) and (pointer:fine){
+  .home-btn:hover::after,
+  .select-btn:hover::after{
+    animation:buttonSweep .72s ease forwards;
+  }
+}
+
+/* Touch/click still gets the sweep without relying on hover. */
+.home-btn.sweep-now::after,
+.select-btn.sweep-now::after{
+  animation:buttonSweep .72s ease forwards;
+}
+
+@keyframes buttonSweep{
+  from{left:-42%}
+  to{left:118%}
+}
+
 </style>
 </head>
 <body>
-<div class="app">
-<header class="topbar">
-    <div class="brand">
-        <div class="brand-logo">P</div>
-        <div class="brand-copy">
-            <h1>PDF Wiz</h1>
-            <p>Image to PDF Converter</p>
-        </div>
+<header class="topbar"><div class="brand" id="brandHome"><div class="brand-mark">P</div><div class="brand-copy"><h1>PDF Wiz</h1><p>Smart PDF utilities</p></div></div><div class="top-right"><div class="top-count" id="topCount">2 tools</div><button class="home-btn hidden" id="homeBtn">All Tools</button></div></header>
+<section class="home" id="homeView"><div class="home-inner"><div class="hero"><div class="eyebrow">PDF WIZ</div><h2>Simple tools.<br>Serious PDF work.</h2><p>Convert images into PDFs or reduce large PDF files directly in your browser. Fast, private, responsive, and designed for everyday work.</p></div><div class="tool-grid"><button class="tool-card" data-open="image"><div class="tool-icon">IMG</div><h3>Image to PDF</h3><p>Arrange multiple images, preview page settings live, choose a standard page or match every page to its uploaded image.</p><div class="go">Open Image to PDF →</div></button><button class="tool-card" data-open="compress"><div class="tool-icon">PDF</div><h3>PDF Compressor</h3><p>Reduce image-heavy PDFs with profiles for small size, balanced detail, high quality, or improved brand-color preservation.</p><div class="go">Open PDF Compressor →</div></button></div></div></section>
+<section class="tool-view" id="imageTool"><div class="tool-layout"><main class="main"><div class="heading"><div><h2>Image to PDF</h2><div class="subtitle" id="imageSubtitle">Add JPG, PNG or WebP images to build your PDF.</div></div><div class="actions hidden" id="imageActions"><select class="sort-select" id="imageSort" aria-label="Sort images"><option value="custom">Sort: Custom</option><option value="name-az">Name A–Z</option><option value="name-za">Name Z–A</option><option value="size-small">Size Small–Large</option><option value="size-large">Size Large–Small</option><option value="added">Date Added</option></select><button class="utility-btn" id="imageAddTop">+ Add</button><button class="utility-btn danger" id="imageClear">Clear</button></div></div><div class="drop-box" id="imageDrop"><div class="drop-inner"><div class="drop-icon">IMG</div><h3>Drop images here</h3><p>JPG, JPEG, PNG and WebP supported.<br>Multiple images can be added together.</p><button class="select-btn" id="imageChoose">Choose Images</button></div><div class="loader-overlay" id="imageLoader"><div class="rocket-stage"><div class="rocket">
+<svg viewBox="0 0 46 72" aria-hidden="true">
+  <path d="M23 2C15 10 11 20 11 34v14l-7 10h14l5 10 5-10h14l-7-10V34C35 20 31 10 23 2Z" fill="#f4f4ff"/>
+  <path d="M11 34 3 45v13l8-6V34ZM35 34l8 11v13l-8-6V34Z" fill="#ff6b2b"/>
+  <circle cx="23" cy="27" r="6" fill="#1b1464" stroke="#ff8c55" stroke-width="2"/>
+  <path d="M19 49h8l-4 8-4-8Z" fill="#ff6b2b"/>
+</svg>
+</div><div class="flame"></div></div><div class="loader-text"><strong>Preparing images</strong> · almost ready</div></div></div><div class="preview-grid hidden" id="imageGrid"></div><input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" multiple hidden></main><aside class="side" id="imageSide"><div class="heading"><h2 class="side-title">PDF Settings</h2><button class="close-drawer" data-close="image">✕</button></div><div class="setting"><label class="label">PAGE MODE</label><select id="pageMode"><option value="standard">Standard PDF Page Size</option><option value="image">Match Each Uploaded Image Size (96 DPI)</option></select></div><div id="standardSettings"><div class="setting"><label class="label">PAGE SIZE</label><select id="pageSize"><option value="a4">A4</option><option value="letter">Letter</option><option value="legal">Legal</option></select></div><div class="setting"><label class="label">ORIENTATION</label><div class="orientation-grid"><button class="orientation-option active" id="portraitOpt" type="button"><div class="paper-wrap"><div class="paper-icon p"></div></div><div class="option-name">Portrait</div></button><button class="orientation-option" id="landscapeOpt" type="button"><div class="paper-wrap"><div class="paper-icon l"></div></div><div class="option-name">Landscape</div></button></div></div><div class="setting"><label class="check"><input type="checkbox" id="autoOrient">Automatically orient each page to its image.</label></div><div class="setting"><label class="label">IMAGE FIT</label><select id="imageFit"><option value="contain">Fit Entire Image</option><option value="cover">Fill Page</option><option value="original">Original Size</option></select></div><div class="setting"><label class="label">PAGE MARGIN</label><select id="pageMargin"><option value="0">No Margin</option><option value="5">5 mm</option><option value="10" selected>10 mm</option><option value="15">15 mm</option><option value="20">20 mm</option></select></div></div><div class="setting"><label class="label">IMAGE QUALITY</label><select id="imageQuality"><option value="1">Maximum</option><option value=".92" selected>High</option><option value=".8">Medium</option><option value=".65">Smaller File</option></select></div><div class="summary"><div class="summary-line"><span>Images</span><strong id="imageSummaryCount">0</strong></div><div class="summary-line"><span>PDF Pages</span><strong id="imageSummaryPages">0</strong></div><div class="summary-line"><span>Page Mode</span><strong id="imageSummaryMode">A4</strong></div></div><button class="action-btn desktop-only-action" id="imageDownload" disabled>Download PDF</button></aside></div></section>
+<section class="tool-view" id="compressTool"><div class="tool-layout"><main class="main"><div class="heading"><div><h2>PDF Compressor</h2><div class="subtitle">Reduce PDF size while retaining as much visual detail as possible.</div></div></div><div class="drop-box" id="pdfDrop"><div class="drop-inner"><div class="drop-icon">PDF</div><h3>Drop a PDF here</h3><p>Best for scans, brochures, catalogues and image-heavy PDFs.<br>Everything is processed locally.</p><button class="select-btn" id="pdfChoose">Choose PDF</button></div><div class="loader-overlay" id="pdfLoader"><div class="rocket-stage"><div class="rocket">
+<svg viewBox="0 0 46 72" aria-hidden="true">
+  <path d="M23 2C15 10 11 20 11 34v14l-7 10h14l5 10 5-10h14l-7-10V34C35 20 31 10 23 2Z" fill="#f4f4ff"/>
+  <path d="M11 34 3 45v13l8-6V34ZM35 34l8 11v13l-8-6V34Z" fill="#ff6b2b"/>
+  <circle cx="23" cy="27" r="6" fill="#1b1464" stroke="#ff8c55" stroke-width="2"/>
+  <path d="M19 49h8l-4 8-4-8Z" fill="#ff6b2b"/>
+</svg>
+</div><div class="flame"></div></div><div class="loader-text"><strong>Reading PDF</strong> · preparing pages</div></div></div><div class="pdf-card" id="pdfCard"><div class="pdf-head"><div class="pdf-icon">PDF</div><div class="pdf-info"><div class="pdf-name" id="pdfName"></div><div class="pdf-meta" id="pdfMeta"></div></div><button class="utility-btn danger" id="pdfRemove">Remove</button></div><div class="pdf-preview" id="pdfPreview"></div></div><input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden></main><aside class="side" id="compressSide"><div class="heading"><h2 class="side-title">Compression Settings</h2><button class="close-drawer" data-close="compress">✕</button></div><div class="setting"><label class="label">COMPRESSION PROFILE</label><div class="preset-grid"><button class="preset" data-preset="maximum"><strong>Maximum Compression</strong><span>110 DPI · 52% quality · smallest sharing file.</span></button><button class="preset active" data-preset="balanced"><strong>Balanced</strong><span>150 DPI · 72% quality · recommended everyday setting.</span></button><button class="preset" data-preset="quality"><strong>High Quality</strong><span>220 DPI · 84% quality · retains more fine detail.</span></button><button class="preset" data-preset="custom"><strong>Custom</strong><span>Manually control DPI and JPEG quality.</span></button></div></div><div class="setting"><label class="label">RENDER RESOLUTION</label><select id="compressDpi"><option value="110">110 DPI</option><option value="130">130 DPI</option><option value="150" selected>150 DPI</option><option value="180">180 DPI</option><option value="200">200 DPI</option><option value="220">220 DPI</option><option value="300">300 DPI</option></select></div><div class="setting"><label class="label">JPEG QUALITY</label><div class="range-row"><input type="range" id="compressQuality" min="35" max="95" value="72"><div class="range-value" id="compressQualityVal">72%</div></div></div><div class="setting"><label class="label">COLOR MODE</label><select id="colorMode"><option value="color">Full Color</option><option value="grayscale">Grayscale — Smaller</option></select></div><div class="setting"><label class="check"><input type="checkbox" id="sharpen" checked>Apply light sharpening after downscaling.</label></div><div class="setting"><label class="check"><input type="checkbox" id="skipSmall">Skip if the original PDF is already under 1 MB.</label></div><div class="summary"><div class="summary-line"><span>Original Size</span><strong id="originalSize">—</strong></div><div class="summary-line"><span>PDF Pages</span><strong id="pageCount">0</strong></div><div class="summary-line"><span>Profile</span><strong id="profileName">Balanced</strong></div></div><button class="action-btn desktop-only-action" id="compressBtn" disabled>Compress PDF</button><div class="progress-wrap" id="progressWrap"><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="progress-text" id="progressText">Preparing…</div></div><div class="output" id="outputBox"><h4>Compression complete</h4><p id="outputStats"></p><button id="outputDownload">Download Compressed PDF</button></div></aside></div></section>
+<button class="side-handle hidden" id="imageHandle" aria-label="Open PDF settings"><svg class="gear-svg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.31-.6-.22l-2.39.96c-.5-.38-1.05-.7-1.66-.94L14.35 2.8c-.02-.24-.22-.43-.47-.43h-3.84c-.24 0-.44.18-.47.43L9.2 5.35c-.6.25-1.15.56-1.66.94l-2.39-.96c-.22-.08-.48 0-.6.22L2.64 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.31-.09.65-.09.94 0 .31.03.64.08.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.31.6.22l2.39-.96c.5.38 1.05.7 1.66.94l.36 2.55c.03.24.23.43.47.43h3.84c.24 0 .44-.18.47-.43l.37-2.55c.6-.25 1.15-.56 1.66-.94l2.39.96c.22.08.48 0 .6-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.02-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5A3.5 3.5 0 0 1 12 15.5Z"/></svg></button>
+<button class="side-handle hidden" id="compressHandle" aria-label="Open compression settings"><svg class="gear-svg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.31-.6-.22l-2.39.96c-.5-.38-1.05-.7-1.66-.94L14.35 2.8c-.02-.24-.22-.43-.47-.43h-3.84c-.24 0-.44.18-.47.43L9.2 5.35c-.6.25-1.15.56-1.66.94l-2.39-.96c-.22-.08-.48 0-.6.22L2.64 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.31-.09.65-.09.94 0 .31.03.64.08.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.31.6.22l2.39-.96c.5.38 1.05.7 1.66.94l.36 2.55c.03.24.23.43.47.43h3.84c.24 0 .44-.18.47-.43l.37-2.55c.6-.25 1.15-.56 1.66-.94l2.39.96c.22.08.48 0 .6-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.02-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5A3.5 3.5 0 0 1 12 15.5Z"/></svg></button>
+<div class="drawer-overlay" id="drawerOverlay"></div><div class="mobile-bottom hidden" id="imageBottom"><button id="imageDownloadMobile" disabled>Download PDF</button></div><div class="mobile-bottom hidden" id="compressBottom"><button id="compressBtnMobile" disabled>Compress PDF</button></div>
+
+<div class="asset-modal" id="assetModal" aria-hidden="true">
+  <div class="asset-modal-card">
+    <div class="asset-modal-head">
+      <div class="asset-modal-title" id="assetModalTitle">Preview</div>
+      <div class="asset-modal-tools">
+        <button id="zoomOut" type="button">−</button>
+        <button id="zoomReset" type="button">100%</button>
+        <button id="zoomIn" type="button">+</button>
+        <button id="assetModalClose" type="button">✕</button>
+      </div>
     </div>
-    <div class="top-stat" id="topStat">0 images</div>
-</header>
-
-<div class="workspace-shell">
-<main class="workspace">
-    <div class="workspace-heading">
-        <div>
-            <h2>PDF Preview</h2>
-            <div class="workspace-subtitle" id="workspaceSubtitle">Add images to begin creating your PDF.</div>
-        </div>
-        <div class="workspace-actions" id="workspaceActions" style="display:none;">
-            <button class="utility-btn" id="addImagesTop">+ Add</button>
-            <button class="utility-btn danger" id="clearImages">Clear</button>
-        </div>
-    </div>
-
-    <div class="initial-upload" id="initialUpload">
-        <div class="initial-upload-content">
-            <div class="upload-icon">⇧</div>
-            <h3>Drop your images here</h3>
-            <p>JPG, JPEG, PNG and WebP supported.<br>Add multiple images at once.</p>
-            <button class="primary-select-btn" id="selectImagesBtn">Choose Images</button>
-        </div>
-    </div>
-
-    <div class="preview-grid" id="previewGrid"></div>
-    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
-</main>
-
-<aside class="settings-panel" id="settingsPanel">
-    <div class="settings-header">
-        <h2>PDF Settings</h2>
-        <button class="close-settings" id="closeSettings" aria-label="Close settings">✕</button>
-    </div>
-
-    <div class="setting-section">
-        <label class="setting-title">PAGE SIZE</label>
-        <select id="pageSize">
-            <option value="a4">A4</option>
-            <option value="letter">Letter</option>
-            <option value="legal">Legal</option>
-        </select>
-    </div>
-
-    <div class="setting-section">
-        <label class="setting-title">ORIENTATION</label>
-        <div class="orientation-options">
-            <button class="orientation-option active" id="portraitOption" type="button">
-                <div class="orientation-visual-wrap"><div class="orientation-paper portrait-icon"></div></div>
-                <div class="orientation-label">Portrait</div>
-            </button>
-            <button class="orientation-option" id="landscapeOption" type="button">
-                <div class="orientation-visual-wrap"><div class="orientation-paper landscape-icon"></div></div>
-                <div class="orientation-label">Landscape</div>
-            </button>
-        </div>
-    </div>
-
-    <div class="setting-section">
-        <label class="check-row">
-            <input type="checkbox" id="autoOrientation">
-            <span>Automatically use portrait or landscape depending on each image.</span>
-        </label>
-    </div>
-
-    <div class="setting-section">
-        <label class="setting-title">IMAGE FIT</label>
-        <select id="imageFit">
-            <option value="contain">Fit Entire Image</option>
-            <option value="cover">Fill Page</option>
-            <option value="original">Original Size</option>
-        </select>
-    </div>
-
-    <div class="setting-section">
-        <label class="setting-title">PAGE MARGIN</label>
-        <select id="margin">
-            <option value="0">No Margin</option>
-            <option value="5">5 mm</option>
-            <option value="10" selected>10 mm</option>
-            <option value="15">15 mm</option>
-            <option value="20">20 mm</option>
-        </select>
-    </div>
-
-    <div class="setting-section">
-        <label class="setting-title">IMAGE QUALITY</label>
-        <select id="quality">
-            <option value="1">Maximum Quality</option>
-            <option value="0.92" selected>High Quality</option>
-            <option value="0.8">Medium Quality</option>
-            <option value="0.65">Smaller File</option>
-        </select>
-    </div>
-
-    <div class="settings-divider"></div>
-
-    <div class="summary">
-        <div class="summary-line"><span class="summary-label">Images</span><span class="summary-value" id="summaryImages">0</span></div>
-        <div class="summary-line"><span class="summary-label">PDF Pages</span><span class="summary-value" id="summaryPages">0</span></div>
-        <div class="summary-line"><span class="summary-label">Format</span><span class="summary-value" id="summaryFormat">A4</span></div>
-        <div class="summary-line"><span class="summary-label">Orientation</span><span class="summary-value" id="summaryOrientation">Portrait</span></div>
-    </div>
-
-    <button class="download-btn" id="downloadBtn" disabled>Download PDF</button>
-    <div class="processing" id="processing">Creating your PDF...</div>
-</aside>
-</div>
+    <div class="asset-canvas" id="assetCanvas"></div>
+  </div>
 </div>
 
-<button class="mobile-gear" id="mobileGear" aria-label="Open PDF settings" title="PDF Settings">
-    <svg class="gear-svg" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.31-.6-.22l-2.39.96c-.5-.38-1.05-.7-1.66-.94L14.35 2.8c-.02-.24-.22-.43-.47-.43h-3.84c-.24 0-.44.18-.47.43L9.2 5.35c-.6.25-1.15.56-1.66.94l-2.39-.96c-.22-.08-.48 0-.6.22L2.64 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.31-.09.65-.09.94 0 .31.03.64.08.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.31.6.22l2.39-.96c.5.38 1.05.7 1.66.94l.36 2.55c.03.24.23.43.47.43h3.84c.24 0 .44-.18.47-.43l.37-2.55c.6-.25 1.15-.56 1.66-.94l2.39.96c.22.08.48 0 .6-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.02-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5A3.5 3.5 0 0 1 12 15.5Z"/>
-    </svg>
-</button>
-
-<div class="settings-overlay" id="settingsOverlay"></div>
-
-<div class="mobile-download-bar" id="mobileDownloadBar">
-    <button class="mobile-download-btn" id="mobileDownloadBtn" disabled>Download PDF</button>
+<div class="mobile-result-modal" id="mobileResultModal">
+  <div class="mobile-result-card">
+    <div class="mobile-result-icon">✓</div>
+    <h3>PDF compressed successfully</h3>
+    <div class="mobile-result-info" id="mobileResultInfo"></div>
+    <div class="mobile-result-actions">
+      <button class="mobile-result-back" id="mobileResultBack" type="button">Go Back</button>
+      <button class="mobile-result-download" id="mobileResultDownload" type="button">Download PDF</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const { jsPDF } = window.jspdf;
-let files = [];
-let orientation = "portrait";
-let draggedIndex = null;
+const {jsPDF}=window.jspdf;
+const homeView=document.getElementById('homeView'),imageTool=document.getElementById('imageTool'),compressTool=document.getElementById('compressTool'),topCount=document.getElementById('topCount'),homeBtn=document.getElementById('homeBtn'),brandHome=document.getElementById('brandHome'),imageHandle=document.getElementById('imageHandle'),compressHandle=document.getElementById('compressHandle'),imageBottom=document.getElementById('imageBottom'),compressBottom=document.getElementById('compressBottom');let activeTool='home';
+function goHome(){activeTool='home';homeView.classList.remove('hidden');imageTool.classList.remove('active');compressTool.classList.remove('active');homeBtn.classList.add('hidden');imageHandle.classList.add('hidden');compressHandle.classList.add('hidden');imageBottom.classList.add('hidden');compressBottom.classList.add('hidden');topCount.textContent='2 tools';closeDrawers()}
+function openTool(n){activeTool=n;homeView.classList.add('hidden');homeBtn.classList.remove('hidden');imageTool.classList.toggle('active',n==='image');compressTool.classList.toggle('active',n==='compress');imageHandle.classList.toggle('hidden',n!=='image');compressHandle.classList.toggle('hidden',n!=='compress');imageBottom.classList.toggle('hidden',n!=='image');compressBottom.classList.toggle('hidden',n!=='compress');updateTopCount();window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('.tool-card').forEach(b=>b.onclick=()=>openTool(b.dataset.open));brandHome.onclick=goHome;homeBtn.onclick=goHome;
+const imageSide=document.getElementById('imageSide'),compressSide=document.getElementById('compressSide'),drawerOverlay=document.getElementById('drawerOverlay');function openDrawer(s){s.classList.add('open');drawerOverlay.classList.add('open');document.body.style.overflow='hidden';if(s===imageSide)imageHandle.style.visibility='hidden';if(s===compressSide)compressHandle.style.visibility='hidden'}function closeDrawers(){imageSide.classList.remove('open');compressSide.classList.remove('open');drawerOverlay.classList.remove('open');document.body.style.overflow='';imageHandle.style.visibility='';compressHandle.style.visibility=''}function bindHandle(handle,side){
+  let opening=false;
 
-const imageInput = document.getElementById("imageInput");
-const initialUpload = document.getElementById("initialUpload");
-const selectImagesBtn = document.getElementById("selectImagesBtn");
-const previewGrid = document.getElementById("previewGrid");
-const addImagesTop = document.getElementById("addImagesTop");
-const clearImages = document.getElementById("clearImages");
-const workspaceActions = document.getElementById("workspaceActions");
-const workspaceSubtitle = document.getElementById("workspaceSubtitle");
-const topStat = document.getElementById("topStat");
-const pageSize = document.getElementById("pageSize");
-const portraitOption = document.getElementById("portraitOption");
-const landscapeOption = document.getElementById("landscapeOption");
-const autoOrientation = document.getElementById("autoOrientation");
-const imageFit = document.getElementById("imageFit");
-const marginInput = document.getElementById("margin");
-const qualityInput = document.getElementById("quality");
-const summaryImages = document.getElementById("summaryImages");
-const summaryPages = document.getElementById("summaryPages");
-const summaryFormat = document.getElementById("summaryFormat");
-const summaryOrientation = document.getElementById("summaryOrientation");
-const downloadBtn = document.getElementById("downloadBtn");
-const mobileDownloadBtn = document.getElementById("mobileDownloadBtn");
-const processing = document.getElementById("processing");
-const mobileGear = document.getElementById("mobileGear");
-const settingsPanel = document.getElementById("settingsPanel");
-const settingsOverlay = document.getElementById("settingsOverlay");
-const closeSettings = document.getElementById("closeSettings");
-
-function openSettings(){
-    settingsPanel.classList.add("open");
-    settingsOverlay.classList.add("open");
-    document.body.style.overflow = "hidden";
-}
-function hideSettings(){
-    settingsPanel.classList.remove("open");
-    settingsOverlay.classList.remove("open");
-    document.body.style.overflow = "";
-}
-mobileGear.addEventListener("click", openSettings);
-closeSettings.addEventListener("click", hideSettings);
-settingsOverlay.addEventListener("click", hideSettings);
-
-selectImagesBtn.addEventListener("click", e => { e.stopPropagation(); imageInput.click(); });
-initialUpload.addEventListener("click", () => imageInput.click());
-addImagesTop.addEventListener("click", () => imageInput.click());
-
-imageInput.addEventListener("change", e => {
-    addFiles(e.target.files);
-    imageInput.value = "";
-});
-
-initialUpload.addEventListener("dragover", e => {
-    e.preventDefault();
-    initialUpload.classList.add("dragging");
-});
-initialUpload.addEventListener("dragleave", () => initialUpload.classList.remove("dragging"));
-initialUpload.addEventListener("drop", e => {
-    e.preventDefault();
-    initialUpload.classList.remove("dragging");
-    addFiles(e.dataTransfer.files);
-});
-
-async function addFiles(fileList){
-    const selectedFiles = Array.from(fileList).filter(file =>
-        ["image/jpeg","image/png","image/webp"].includes(file.type)
-    );
-
-    for(const file of selectedFiles){
-        const url = URL.createObjectURL(file);
-        try{
-            const image = await loadImage(url);
-            files.push({
-                id: Date.now()+"-"+Math.random(),
-                file,
-                url,
-                width:image.naturalWidth,
-                height:image.naturalHeight
-            });
-        }catch(error){
-            URL.revokeObjectURL(url);
-            console.error("Could not load image:", file.name);
-        }
+  const openOnce=e=>{
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
     }
-    renderInterface();
+    if(opening || side.classList.contains('open'))return;
+
+    opening=true;
+    requestAnimationFrame(()=>{
+      openDrawer(side);
+      setTimeout(()=>{opening=false},260);
+    });
+  };
+
+  handle.addEventListener('touchend',openOnce,{passive:false});
+  handle.addEventListener('click',e=>{
+    /* On touch devices touchend already handled it; avoid duplicate firing. */
+    if(e.detail===0)openOnce(e);
+  });
+  handle.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){
+      openOnce(e);
+    }
+  });
 }
+bindHandle(imageHandle,imageSide);
+bindHandle(compressHandle,compressSide);drawerOverlay.onclick=closeDrawers;document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeDrawers);
+function startRocket(loader,label){const t=loader.querySelector('.loader-text');t.innerHTML='<strong>'+label+'</strong> · please wait';loader.classList.remove('launch');loader.classList.add('active')}async function finishRocket(loader){loader.classList.add('launch');await new Promise(r=>setTimeout(r,320));loader.classList.remove('active','launch')}
+function fmt(b){if(!b)return'0 B';if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(2)+' MB'}function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}function loadImg(u){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=u})}function imageToJpeg(i,q){const c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(i,0,0);return c.toDataURL('image/jpeg',q)}function dlBlob(b,n){const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1200)}
+const imageDrop=document.getElementById('imageDrop'),imageChoose=document.getElementById('imageChoose'),imageInput=document.getElementById('imageInput'),imageLoader=document.getElementById('imageLoader'),imageGrid=document.getElementById('imageGrid'),imageActions=document.getElementById('imageActions'),imageAddTop=document.getElementById('imageAddTop'),imageClear=document.getElementById('imageClear'),pageMode=document.getElementById('pageMode'),standardSettings=document.getElementById('standardSettings'),pageSize=document.getElementById('pageSize'),portraitOpt=document.getElementById('portraitOpt'),landscapeOpt=document.getElementById('landscapeOpt'),autoOrient=document.getElementById('autoOrient'),imageFit=document.getElementById('imageFit'),pageMargin=document.getElementById('pageMargin'),imageQuality=document.getElementById('imageQuality'),imageSummaryCount=document.getElementById('imageSummaryCount'),imageSummaryPages=document.getElementById('imageSummaryPages'),imageSummaryMode=document.getElementById('imageSummaryMode'),imageDownload=document.getElementById('imageDownload'),imageDownloadMobile=document.getElementById('imageDownloadMobile'),imageSubtitle=document.getElementById('imageSubtitle'),imageSort=document.getElementById('imageSort');let images=[],orientation='portrait',dragIndex=null,touchDrag=null,imageSequence=0;
+imageChoose.onclick=e=>{e.stopPropagation();imageInput.click()};imageDrop.onclick=()=>imageInput.click();imageAddTop.onclick=()=>imageInput.click();imageInput.onchange=async e=>{await addImages(e.target.files);imageInput.value=''};imageDrop.ondragover=e=>{e.preventDefault();imageDrop.classList.add('dragging')};imageDrop.ondragleave=()=>imageDrop.classList.remove('dragging');imageDrop.ondrop=async e=>{e.preventDefault();imageDrop.classList.remove('dragging');await addImages(e.dataTransfer.files)};
+async function addImages(list){const valid=[...list].filter(f=>['image/jpeg','image/png','image/webp'].includes(f.type));if(!valid.length)return;startRocket(imageLoader,'Preparing images');const st=performance.now();for(const f of valid){const url=URL.createObjectURL(f);try{const im=await loadImg(url);images.push({file:f,url,width:im.naturalWidth,height:im.naturalHeight,addedAt:imageSequence++})}catch(e){URL.revokeObjectURL(url)}}const wait=Math.max(0,280-(performance.now()-st));if(wait)await new Promise(r=>setTimeout(r,wait));await finishRocket(imageLoader);applyImageSort()}
+function imageOrientation(it){return autoOrient.checked?(it.width>it.height?'landscape':'portrait'):orientation}function marginPct(){return({0:0,5:2.4,10:4.8,15:7.1,20:9.4})[+pageMargin.value]??4.8}function imagePageStyle(it){if(pageMode.value!=='image')return'';return it.width>=it.height?`width:100%;max-width:285px;aspect-ratio:${it.width}/${it.height}`:`height:274px;aspect-ratio:${it.width}/${it.height}`}
+function renderImages(){
+  const has=images.length>0;
+  imageDrop.classList.toggle('hidden',has);
+  imageGrid.classList.toggle('hidden',!has);
+  imageActions.classList.toggle('hidden',!has);
+  imageDownload.disabled=!has;
+  imageDownloadMobile.disabled=!has;
+  imageSubtitle.textContent=has?'Drag images to reorder them, or use Sort By. Tap an image to preview.':'Add JPG, PNG or WebP images to build your PDF.';
+  imageGrid.innerHTML='';
 
-function renderInterface(){
-    const hasFiles = files.length > 0;
-    initialUpload.style.display = hasFiles ? "none" : "flex";
-    previewGrid.style.display = hasFiles ? "grid" : "none";
-    workspaceActions.style.display = hasFiles ? "flex" : "none";
-    downloadBtn.disabled = !hasFiles;
-    mobileDownloadBtn.disabled = !hasFiles;
-    workspaceSubtitle.textContent = hasFiles
-        ? "Drag image cards to change PDF page order."
-        : "Add images to begin creating your PDF.";
-    renderPreviewCards();
-    updateSummary();
-}
+  images.forEach((it,i)=>{
+    const card=document.createElement('div');
+    card.className='preview-card';
+    card.draggable=true;
+    card.dataset.index=i;
 
-function renderPreviewCards(){
-    previewGrid.innerHTML = "";
+    const sized=pageMode.value==='image';
+    const ori=sized?(it.width>it.height?'landscape':'portrait'):imageOrientation(it);
+    const m=sized?0:marginPct();
 
-    files.forEach((item,index) => {
-        const card = document.createElement("div");
-        card.className = "preview-card";
-        card.draggable = true;
+    card.innerHTML=`<div class="card-actions">
+      <button class="card-btn view-btn" title="Preview image" aria-label="Preview image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5.2 0-9.3 4.4-10.5 6.1a1.5 1.5 0 0 0 0 1.8C2.7 14.6 6.8 19 12 19s9.3-4.4 10.5-6.1a1.5 1.5 0 0 0 0-1.8C21.3 9.4 17.2 5 12 5Zm0 11.5A4.5 4.5 0 1 1 12 7a4.5 4.5 0 0 1 0 9.5Zm0-2.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></button>
+      <button class="card-btn back" title="Move backward">←</button>
+      <button class="card-btn next" title="Move forward">→</button>
+      <button class="card-btn delete" title="Remove">×</button>
+    </div>
+    <div class="preview-stage">
+      <div class="page-preview ${ori} ${sized?'image-size':''}" data-page="${pageSize.value}" style="${imagePageStyle(it)}">
+        <div class="margin-box" style="top:${m}%;right:${m}%;bottom:${m}%;left:${m}%">
+          <img class="preview-image ${sized?'contain':imageFit.value}" src="${it.url}" draggable="false">
+        </div>
+      </div>
+    </div>
+    <div class="card-foot"><div class="file-name">${esc(it.file.name)}</div>
+      <div class="file-meta"><span>${fmt(it.file.size)}</span><span class="page-no">Page ${i+1}</span></div>
+    </div>`;
 
-        const pageOrientation = getPageOrientation(item);
-        const marginPercent = getPreviewMargin(Number(marginInput.value));
+    card.querySelector('.view-btn').onclick=e=>{e.stopPropagation();openImagePreview(it)};
+    card.querySelector('.delete').onclick=e=>{e.stopPropagation();removeImage(i)};
+    card.querySelector('.back').onclick=e=>{e.stopPropagation();moveImage(i,-1);imageSort.value='custom'};
+    card.querySelector('.next').onclick=e=>{e.stopPropagation();moveImage(i,1);imageSort.value='custom'};
 
-        card.innerHTML = `
-            <div class="card-actions">
-                <button class="card-btn move-left" type="button" title="Move backward">←</button>
-                <button class="card-btn move-right" type="button" title="Move forward">→</button>
-                <button class="card-btn delete" type="button" title="Remove image">×</button>
-            </div>
-
-            <div class="page-preview-stage">
-                <div class="pdf-page-preview ${pageOrientation}" data-page="${pageSize.value}">
-                    <div class="preview-margin-box"
-                        style="top:${marginPercent}%;right:${marginPercent}%;bottom:${marginPercent}%;left:${marginPercent}%;">
-                        <img src="${item.url}" class="preview-image ${imageFit.value}"
-                            alt="${escapeHTML(item.file.name)}" draggable="false">
-                    </div>
-                </div>
-            </div>
-
-            <div class="preview-card-footer">
-                <div class="preview-file-name" title="${escapeHTML(item.file.name)}">
-                    ${escapeHTML(item.file.name)}
-                </div>
-                <div class="preview-file-meta">
-                    <span>${formatFileSize(item.file.size)}</span>
-                    <span class="card-number">Page ${index+1}</span>
-                </div>
-            </div>
-        `;
-
-        card.querySelector(".delete").addEventListener("click", e => {
-            e.stopPropagation(); removeImage(index);
-        });
-        card.querySelector(".move-left").addEventListener("click", e => {
-            e.stopPropagation(); moveImage(index,-1);
-        });
-        card.querySelector(".move-right").addEventListener("click", e => {
-            e.stopPropagation(); moveImage(index,1);
-        });
-
-        card.addEventListener("dragstart", () => draggedIndex = index);
-        card.addEventListener("dragover", e => {
-            e.preventDefault(); card.classList.add("drag-over");
-        });
-        card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
-        card.addEventListener("drop", e => {
-            e.preventDefault();
-            card.classList.remove("drag-over");
-            if(draggedIndex === null || draggedIndex === index) return;
-            const moved = files.splice(draggedIndex,1)[0];
-            files.splice(index,0,moved);
-            draggedIndex = null;
-            renderInterface();
-        });
-
-        previewGrid.appendChild(card);
+    /* desktop HTML drag */
+    card.addEventListener('dragstart',()=>{dragIndex=i;card.classList.add('dragging-card')});
+    card.addEventListener('dragend',()=>card.classList.remove('dragging-card'));
+    card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('drag-target')});
+    card.addEventListener('dragleave',()=>card.classList.remove('drag-target'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();card.classList.remove('drag-target');
+      if(dragIndex===null||dragIndex===i)return;
+      const moved=images.splice(dragIndex,1)[0];images.splice(i,0,moved);
+      dragIndex=null;imageSort.value='custom';renderImages()
     });
 
-    if(files.length > 0){
-        const addCard = document.createElement("div");
-        addCard.className = "add-card";
-        addCard.innerHTML = `
-            <div class="add-card-inner">
-                <div class="add-card-icon">+</div>
-                <div class="add-card-title">Add More Images</div>
-                <div class="add-card-subtitle">Click or drop files here</div>
-            </div>
-        `;
-        addCard.addEventListener("click", () => imageInput.click());
-        addCard.addEventListener("dragover", e => {
-            e.preventDefault(); addCard.classList.add("dragging");
-        });
-        addCard.addEventListener("dragleave", () => addCard.classList.remove("dragging"));
-        addCard.addEventListener("drop", e => {
-            e.preventDefault(); e.stopPropagation();
-            addCard.classList.remove("dragging");
-            addFiles(e.dataTransfer.files);
-        });
-        previewGrid.appendChild(addCard);
+    /* reliable mobile long-press drag using a floating clone */
+    let pressTimer=null;
+    let dragSession=null;
+    const stage=card.querySelector('.preview-stage');
+
+    card.addEventListener('contextmenu',e=>e.preventDefault());
+    stage.addEventListener('contextmenu',e=>e.preventDefault());
+    stage.addEventListener('selectstart',e=>e.preventDefault());
+    stage.addEventListener('dragstart',e=>e.preventDefault());
+
+    function removeAllDragArtifacts(){
+      if(pressTimer){clearTimeout(pressTimer);pressTimer=null}
+
+      if(dragSession && dragSession.swallowNative){
+        document.removeEventListener('touchmove',dragSession.swallowNative,true);
+        document.removeEventListener('contextmenu',dragSession.swallowNative,true);
+        document.removeEventListener('selectstart',dragSession.swallowNative,true);
+      }
+
+      document.querySelectorAll('.mobile-drag-ghost').forEach(g=>g.remove());
+      document.querySelectorAll('.preview-card.drag-source').forEach(c=>{
+        c.classList.remove('drag-source');
+        c.style.opacity='';
+        c.style.filter='';
+      });
+      document.querySelectorAll('.preview-card.drag-target').forEach(c=>c.classList.remove('drag-target'));
+
+      dragSession=null;
+      document.body.style.userSelect='';
+      document.body.style.webkitUserSelect='';
+      document.body.style.webkitTouchCallout='';
+      stage.style.touchAction='';
+
+      if(document.activeElement && document.activeElement.blur){
+        try{document.activeElement.blur()}catch(_){}
+      }
     }
-}
 
-function getPageOrientation(item){
-    if(autoOrientation.checked){
-        return item.width > item.height ? "landscape" : "portrait";
-    }
-    return orientation;
-}
+    function getDropTarget(x,y){
+      const cards=[...imageGrid.querySelectorAll('.preview-card')].filter(c=>c!==card);
+      let direct=null;
 
-function getPreviewMargin(mm){
-    const margins = {0:0,5:2.4,10:4.8,15:7.1,20:9.4};
-    return margins[mm] ?? 4.8;
-}
-
-function removeImage(index){
-    URL.revokeObjectURL(files[index].url);
-    files.splice(index,1);
-    renderInterface();
-}
-
-function moveImage(index,direction){
-    const targetIndex = index + direction;
-    if(targetIndex < 0 || targetIndex >= files.length) return;
-    const temp = files[index];
-    files[index] = files[targetIndex];
-    files[targetIndex] = temp;
-    renderInterface();
-}
-
-clearImages.addEventListener("click", () => {
-    files.forEach(item => URL.revokeObjectURL(item.url));
-    files = [];
-    renderInterface();
-});
-
-portraitOption.addEventListener("click", () => {
-    orientation = "portrait";
-    portraitOption.classList.add("active");
-    landscapeOption.classList.remove("active");
-    renderInterface();
-});
-
-landscapeOption.addEventListener("click", () => {
-    orientation = "landscape";
-    landscapeOption.classList.add("active");
-    portraitOption.classList.remove("active");
-    renderInterface();
-});
-
-[pageSize,imageFit,marginInput,autoOrientation].forEach(el =>
-    el.addEventListener("change",renderInterface)
-);
-qualityInput.addEventListener("change",updateSummary);
-
-function updateSummary(){
-    const count = files.length;
-    summaryImages.textContent = count;
-    summaryPages.textContent = count;
-    summaryFormat.textContent = pageSize.value.toUpperCase();
-    summaryOrientation.textContent = autoOrientation.checked ? "Automatic" : capitalize(orientation);
-    topStat.textContent = count === 1 ? "1 image" : count+" images";
-    downloadBtn.disabled = count === 0;
-    mobileDownloadBtn.disabled = count === 0;
-}
-
-function loadImage(url){
-    return new Promise((resolve,reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = url;
-    });
-}
-
-function imageToDataURL(image,quality){
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#ffffff";
-    context.fillRect(0,0,canvas.width,canvas.height);
-    context.drawImage(image,0,0);
-    return canvas.toDataURL("image/jpeg",quality);
-}
-
-async function createPDF(){
-    if(files.length === 0) return;
-
-    downloadBtn.disabled = true;
-    mobileDownloadBtn.disabled = true;
-    processing.style.display = "block";
-    mobileDownloadBtn.textContent = "Creating PDF...";
-
-    try{
-        let pdf = null;
-
-        for(let i=0;i<files.length;i++){
-            const item = files[i];
-            const image = await loadImage(item.url);
-
-            let currentOrientation = orientation;
-            if(autoOrientation.checked){
-                currentOrientation = image.naturalWidth > image.naturalHeight ? "landscape" : "portrait";
-            }
-
-            if(pdf === null){
-                pdf = new jsPDF({orientation:currentOrientation,unit:"mm",format:pageSize.value});
-            }else{
-                pdf.addPage(pageSize.value,currentOrientation);
-            }
-
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const margin = Number(marginInput.value);
-            const usableWidth = pdfWidth - margin*2;
-            const usableHeight = pdfHeight - margin*2;
-            const imageRatio = image.naturalWidth / image.naturalHeight;
-            const targetRatio = usableWidth / usableHeight;
-
-            let drawWidth,drawHeight,x,y;
-
-            if(imageFit.value === "contain"){
-                if(imageRatio > targetRatio){
-                    drawWidth = usableWidth;
-                    drawHeight = drawWidth/imageRatio;
-                }else{
-                    drawHeight = usableHeight;
-                    drawWidth = drawHeight*imageRatio;
-                }
-                x = margin + (usableWidth-drawWidth)/2;
-                y = margin + (usableHeight-drawHeight)/2;
-            }else if(imageFit.value === "cover"){
-                if(imageRatio > targetRatio){
-                    drawHeight = usableHeight;
-                    drawWidth = drawHeight*imageRatio;
-                }else{
-                    drawWidth = usableWidth;
-                    drawHeight = drawWidth/imageRatio;
-                }
-                x = margin + (usableWidth-drawWidth)/2;
-                y = margin + (usableHeight-drawHeight)/2;
-            }else{
-                drawWidth = image.naturalWidth*25.4/96;
-                drawHeight = image.naturalHeight*25.4/96;
-
-                if(drawWidth > usableWidth || drawHeight > usableHeight){
-                    const scale = Math.min(usableWidth/drawWidth,usableHeight/drawHeight);
-                    drawWidth *= scale;
-                    drawHeight *= scale;
-                }
-                x = (pdfWidth-drawWidth)/2;
-                y = (pdfHeight-drawHeight)/2;
-            }
-
-            const jpegData = imageToDataURL(image,Number(qualityInput.value));
-
-            if(imageFit.value === "cover"){
-                pdf.saveGraphicsState();
-                pdf.rect(margin,margin,usableWidth,usableHeight);
-                pdf.clip();
-                pdf.addImage(jpegData,"JPEG",x,y,drawWidth,drawHeight,undefined,"FAST");
-                pdf.restoreGraphicsState();
-            }else{
-                pdf.addImage(jpegData,"JPEG",x,y,drawWidth,drawHeight,undefined,"FAST");
-            }
+      for(const candidate of cards){
+        const r=candidate.getBoundingClientRect();
+        if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom){
+          direct=candidate;
+          break;
         }
+      }
+      if(direct)return direct;
 
-        const date = new Date().toISOString().slice(0,10);
-        pdf.save("PDF-Wiz-"+date+".pdf");
-    }catch(error){
-        console.error(error);
-        alert("PDF Wiz could not create the PDF. Please try again.");
-    }finally{
-        processing.style.display = "none";
-        mobileDownloadBtn.textContent = "Download PDF";
-        const disabled = files.length === 0;
-        downloadBtn.disabled = disabled;
-        mobileDownloadBtn.disabled = disabled;
+      let nearest=null,best=Infinity;
+      for(const candidate of cards){
+        const r=candidate.getBoundingClientRect();
+        const cx=r.left+r.width/2;
+        const cy=r.top+r.height/2;
+        const d=Math.hypot(x-cx,y-cy);
+        if(d<best){best=d;nearest=candidate}
+      }
+      return best<150?nearest:null;
     }
+
+    function moveGhost(x,y){
+      if(!dragSession||!dragSession.ghost)return;
+      const g=dragSession.ghost;
+      g.style.left=(x-dragSession.offsetX)+'px';
+      g.style.top=(y-dragSession.offsetY)+'px';
+    }
+
+    function beginCloneDrag(e){
+      removeAllDragArtifacts();
+
+      const rect=card.getBoundingClientRect();
+      const ghost=card.cloneNode(true);
+
+      ghost.classList.remove('drag-source','drag-target','mobile-drag-active');
+      ghost.classList.add('mobile-drag-ghost');
+      ghost.style.width=rect.width+'px';
+      ghost.style.height=rect.height+'px';
+      ghost.style.left=rect.left+'px';
+      ghost.style.top=rect.top+'px';
+
+      document.body.appendChild(ghost);
+      card.classList.add('drag-source');
+
+      dragSession={
+        pointerId:e.pointerId,
+        ghost,
+        lastX:e.clientX,
+        lastY:e.clientY,
+        offsetX:e.clientX-rect.left,
+        offsetY:e.clientY-rect.top
+      };
+
+      stage.style.touchAction='none';
+      document.body.style.userSelect='none';
+      document.body.style.webkitUserSelect='none';
+      document.body.style.webkitTouchCallout='none';
+
+      const swallowNative=ev=>{
+        if(dragSession){
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+      };
+      dragSession.swallowNative=swallowNative;
+      document.addEventListener('touchmove',swallowNative,{passive:false,capture:true});
+      document.addEventListener('contextmenu',swallowNative,{capture:true});
+      document.addEventListener('selectstart',swallowNative,{capture:true});
+
+      try{stage.setPointerCapture(e.pointerId)}catch(_){}
+      
+    }
+
+    stage.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse')return;
+
+      if(document.activeElement && document.activeElement.blur){
+        try{document.activeElement.blur()}catch(_){}
+      }
+
+      /* only one drag session can ever exist */
+      removeAllDragArtifacts();
+
+      const startX=e.clientX;
+      const startY=e.clientY;
+
+      pressTimer=setTimeout(()=>{
+        beginCloneDrag(e);
+      },300);
+
+      const cancelBeforeHold=ev=>{
+        if(!pressTimer||dragSession)return;
+        const dx=ev.clientX-startX;
+        const dy=ev.clientY-startY;
+
+        /* Vertical movement is most likely page scrolling, so cancel very early. */
+        if(Math.abs(dy)>7 || Math.abs(dx)>12){
+          clearTimeout(pressTimer);
+          pressTimer=null;
+        }
+      };
+
+      const tempMove=ev=>cancelBeforeHold(ev);
+      const tempEnd=()=>{
+        if(pressTimer){clearTimeout(pressTimer);pressTimer=null}
+        stage.removeEventListener('pointermove',tempMove);
+        stage.removeEventListener('pointerup',tempEnd);
+        stage.removeEventListener('pointercancel',tempEnd);
+      };
+
+      stage.addEventListener('pointermove',tempMove,{passive:false});
+      stage.addEventListener('pointerup',tempEnd,{once:true});
+      stage.addEventListener('pointercancel',tempEnd,{once:true});
+    },{passive:false});
+
+    stage.addEventListener('pointermove',e=>{
+      if(!dragSession)return;
+
+      e.preventDefault();
+      dragSession.lastX=e.clientX;
+      dragSession.lastY=e.clientY;
+      moveGhost(e.clientX,e.clientY);
+
+      document.querySelectorAll('.preview-card.drag-target').forEach(c=>c.classList.remove('drag-target'));
+      const target=getDropTarget(e.clientX,e.clientY);
+      if(target)target.classList.add('drag-target');
+    },{passive:false});
+
+    function finishCloneDrag(){
+      if(pressTimer){clearTimeout(pressTimer);pressTimer=null}
+
+      if(!dragSession){
+        removeAllDragArtifacts();
+        return;
+      }
+
+      const x=dragSession.lastX;
+      const y=dragSession.lastY;
+      const target=getDropTarget(x,y);
+      const targetIndex=target?Number(target.dataset.index):NaN;
+
+      removeAllDragArtifacts();
+
+      if(Number.isInteger(targetIndex)&&targetIndex!==i){
+        const moved=images.splice(i,1)[0];
+        images.splice(targetIndex,0,moved);
+        imageSort.value='custom';
+        renderImages();
+      }
+    }
+
+    stage.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();finishCloneDrag()},{passive:false});
+    stage.addEventListener('pointercancel',e=>{e.preventDefault();finishCloneDrag()},{passive:false});
+    stage.addEventListener('lostpointercapture',finishCloneDrag);
+
+    /* absolute cleanup safety */
+    window.addEventListener('blur',removeAllDragArtifacts);
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden)removeAllDragArtifacts();
+    });
+
+    imageGrid.appendChild(card);
+  });
+
+  if(has){
+    const a=document.createElement('div');
+    a.className='add-card';
+    a.innerHTML='<div><div class="add-icon">+</div><strong>Add More Images</strong><p>Click or drop files here</p></div>';
+    a.onclick=()=>imageInput.click();
+    a.ondragover=e=>e.preventDefault();
+    a.ondrop=async e=>{e.preventDefault();e.stopPropagation();await addImages(e.dataTransfer.files)};
+    imageGrid.appendChild(a)
+  }
+  updateImageSummary();
+  updateTopCount()
 }
 
-downloadBtn.addEventListener("click",createPDF);
-mobileDownloadBtn.addEventListener("click",createPDF);
+function applyImageSort(){
+  if(!imageSort){renderImages();return}
+  const mode=imageSort.value;
 
-function formatFileSize(bytes){
-    if(bytes < 1024) return bytes+" B";
-    if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+" KB";
-    return (bytes/1024/1024).toFixed(2)+" MB";
-}
-function escapeHTML(text){
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-}
-function capitalize(text){
-    return text.charAt(0).toUpperCase()+text.slice(1);
-}
+  if(mode==='name-az'){
+    images.sort((a,b)=>a.file.name.localeCompare(b.file.name,undefined,{numeric:true,sensitivity:'base'}));
+  }else if(mode==='name-za'){
+    images.sort((a,b)=>b.file.name.localeCompare(a.file.name,undefined,{numeric:true,sensitivity:'base'}));
+  }else if(mode==='size-small'){
+    images.sort((a,b)=>a.file.size-b.file.size);
+  }else if(mode==='size-large'){
+    images.sort((a,b)=>b.file.size-a.file.size);
+  }else if(mode==='added'){
+    images.sort((a,b)=>(a.addedAt??0)-(b.addedAt??0));
+  }
 
-renderInterface();
+  renderImages();
+}
+imageSort.addEventListener('change',applyImageSort);
+
+function moveImage(i,d){const t=i+d;if(t<0||t>=images.length)return;[images[i],images[t]]=[images[t],images[i]];if(imageSort)imageSort.value='custom';renderImages()}function removeImage(i){URL.revokeObjectURL(images[i].url);images.splice(i,1);renderImages()}imageClear.onclick=()=>{images.forEach(i=>URL.revokeObjectURL(i.url));images=[];if(imageSort)imageSort.value='custom';renderImages()};portraitOpt.onclick=()=>{orientation='portrait';portraitOpt.classList.add('active');landscapeOpt.classList.remove('active');renderImages()};landscapeOpt.onclick=()=>{orientation='landscape';landscapeOpt.classList.add('active');portraitOpt.classList.remove('active');renderImages()};[pageMode,pageSize,autoOrient,imageFit,pageMargin,imageQuality].forEach(x=>x.onchange=()=>{standardSettings.classList.toggle('hidden',pageMode.value==='image');renderImages()});function updateImageSummary(){imageSummaryCount.textContent=images.length;imageSummaryPages.textContent=images.length;imageSummaryMode.textContent=pageMode.value==='image'?'Image Size':pageSize.value.toUpperCase()}
+async function createImagePdf(){if(!images.length)return;imageDownload.disabled=imageDownloadMobile.disabled=true;try{let pdf=null;for(let i=0;i<images.length;i++){imageDownloadMobile.textContent=`Creating ${i+1}/${images.length}…`;const it=images[i],img=await loadImg(it.url),q=+imageQuality.value;if(pageMode.value==='image'){const w=it.width*25.4/96,h=it.height*25.4/96,ori=w>h?'landscape':'portrait';if(!pdf)pdf=new jsPDF({orientation:ori,unit:'mm',format:[w,h]});else pdf.addPage([w,h],ori);pdf.addImage(imageToJpeg(img,q),'JPEG',0,0,w,h,undefined,'FAST')}else{const ori=autoOrient.checked?(img.naturalWidth>img.naturalHeight?'landscape':'portrait'):orientation;if(!pdf)pdf=new jsPDF({orientation:ori,unit:'mm',format:pageSize.value});else pdf.addPage(pageSize.value,ori);const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),m=+pageMargin.value,uw=pw-m*2,uh=ph-m*2,ir=img.naturalWidth/img.naturalHeight,pr=uw/uh;let w,h,x,y;if(imageFit.value==='cover'){if(ir>pr){h=uh;w=h*ir}else{w=uw;h=w/ir}}else if(imageFit.value==='original'){w=img.naturalWidth*25.4/96;h=img.naturalHeight*25.4/96;if(w>uw||h>uh){const s=Math.min(uw/w,uh/h);w*=s;h*=s}}else{if(ir>pr){w=uw;h=w/ir}else{h=uh;w=h*ir}}x=m+(uw-w)/2;y=m+(uh-h)/2;const data=imageToJpeg(img,q);if(imageFit.value==='cover'){pdf.saveGraphicsState();pdf.rect(m,m,uw,uh);pdf.clip();pdf.addImage(data,'JPEG',x,y,w,h,undefined,'FAST');pdf.restoreGraphicsState()}else pdf.addImage(data,'JPEG',x,y,w,h,undefined,'FAST')}await new Promise(r=>setTimeout(r,0))}pdf.save('PDF-Wiz-'+new Date().toISOString().slice(0,10)+'.pdf')}catch(e){console.error(e);alert('PDF Wiz could not create the PDF.')}finally{imageDownload.disabled=imageDownloadMobile.disabled=!images.length;imageDownloadMobile.textContent='Download PDF'}}imageDownload.onclick=createImagePdf;imageDownloadMobile.onclick=createImagePdf;
+const pdfDrop=document.getElementById('pdfDrop'),pdfChoose=document.getElementById('pdfChoose'),pdfInput=document.getElementById('pdfInput'),pdfLoader=document.getElementById('pdfLoader'),pdfCard=document.getElementById('pdfCard'),pdfName=document.getElementById('pdfName'),pdfMeta=document.getElementById('pdfMeta'),pdfPreview=document.getElementById('pdfPreview'),pdfRemove=document.getElementById('pdfRemove'),compressDpi=document.getElementById('compressDpi'),compressQuality=document.getElementById('compressQuality'),compressQualityVal=document.getElementById('compressQualityVal'),colorMode=document.getElementById('colorMode'),sharpen=document.getElementById('sharpen'),skipSmall=document.getElementById('skipSmall'),originalSize=document.getElementById('originalSize'),pageCount=document.getElementById('pageCount'),profileName=document.getElementById('profileName'),compressBtn=document.getElementById('compressBtn'),compressBtnMobile=document.getElementById('compressBtnMobile'),progressWrap=document.getElementById('progressWrap'),progressBar=document.getElementById('progressBar'),progressText=document.getElementById('progressText'),outputBox=document.getElementById('outputBox'),outputStats=document.getElementById('outputStats'),outputDownload=document.getElementById('outputDownload');let sourceFile=null,sourceBytes=null,sourceDoc=null,compressedBlob=null,compressedName=null,currentProfile='balanced';const presets={maximum:{dpi:110,q:52,name:'Maximum'},balanced:{dpi:150,q:72,name:'Balanced'},quality:{dpi:220,q:84,name:'High Quality'}};
+pdfChoose.onclick=e=>{e.stopPropagation();pdfInput.click()};pdfDrop.onclick=()=>pdfInput.click();pdfInput.onchange=async e=>{if(e.target.files[0])await loadPdf(e.target.files[0]);pdfInput.value=''};pdfDrop.ondragover=e=>{e.preventDefault();pdfDrop.classList.add('dragging')};pdfDrop.ondragleave=()=>pdfDrop.classList.remove('dragging');pdfDrop.ondrop=async e=>{e.preventDefault();pdfDrop.classList.remove('dragging');const f=[...e.dataTransfer.files].find(f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name));if(f)await loadPdf(f)};
+async function pdfjs(){const lib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');lib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';return lib}async function loadPdf(file){startRocket(pdfLoader,'Reading PDF');const st=performance.now();try{sourceFile=file;sourceBytes=new Uint8Array(await file.arrayBuffer());const lib=await pdfjs();sourceDoc=await lib.getDocument({data:sourceBytes}).promise;const wait=Math.max(0,300-(performance.now()-st));if(wait)await new Promise(r=>setTimeout(r,wait));await finishRocket(pdfLoader);pdfDrop.classList.add('hidden');pdfCard.classList.add('visible');pdfName.textContent=file.name;pdfMeta.textContent=`${fmt(file.size)} · ${sourceDoc.numPages} page${sourceDoc.numPages===1?'':'s'}`;originalSize.textContent=fmt(file.size);pageCount.textContent=sourceDoc.numPages;compressBtn.disabled=compressBtnMobile.disabled=false;renderPdfThumbs();updateTopCount()}catch(e){console.error(e);await finishRocket(pdfLoader);alert('PDF Wiz could not read this PDF. It may be encrypted or damaged.');removePdf()}}
+async function renderPdfThumbs(){
+  pdfPreview.innerHTML='';
+  const n=Math.min(sourceDoc.numPages,8);
+  for(let i=1;i<=n;i++){
+    const p=await sourceDoc.getPage(i),base=p.getViewport({scale:1}),scale=Math.min(.42,170/base.width),v=p.getViewport({scale});
+    const w=document.createElement('div'),c=document.createElement('canvas');
+    w.className='thumb';w.style.cursor='zoom-in';w.dataset.page=i;
+    c.width=Math.max(1,Math.floor(v.width));c.height=Math.max(1,Math.floor(v.height));
+    await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+    const l=document.createElement('div');l.className='thumb-label';l.textContent='Page '+i;
+    w.append(c,l);w.addEventListener('click',()=>openPdfPreview(i));pdfPreview.appendChild(w)
+  }
+  if(sourceDoc.numPages>n){
+    const m=document.createElement('div');m.className='more';m.textContent=`+ ${sourceDoc.numPages-n} more pages`;
+    pdfPreview.appendChild(m)
+  }
+}
+function removePdf(){sourceFile=null;sourceBytes=null;sourceDoc=null;compressedBlob=null;compressedName=null;pdfDrop.classList.remove('hidden');pdfCard.classList.remove('visible');pdfPreview.innerHTML='';originalSize.textContent='—';pageCount.textContent='0';compressBtn.disabled=compressBtnMobile.disabled=true;outputBox.classList.remove('visible');updateTopCount()}pdfRemove.onclick=removePdf;
+document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.preset').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  currentProfile=b.dataset.preset;
+  if(presets[currentProfile]){
+    compressDpi.value=presets[currentProfile].dpi;
+    compressQuality.value=presets[currentProfile].q;
+    compressQualityVal.textContent=presets[currentProfile].q+'%';
+    sharpen.checked=true;
+  }
+  profileName.textContent=currentProfile==='custom'?'Custom':presets[currentProfile].name;
+});
+function customProfile(){
+  currentProfile='custom';
+  document.querySelectorAll('.preset').forEach(x=>x.classList.toggle('active',x.dataset.preset==='custom'));
+  profileName.textContent='Custom';
+}
+compressDpi.onchange=customProfile;
+compressQuality.oninput=()=>{compressQualityVal.textContent=compressQuality.value+'%';customProfile()};
+function gray(ctx,w,h){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}function lightSharpen(ctx,w,h){if(w*h>12000000)return;const s=ctx.getImageData(0,0,w,h),o=ctx.createImageData(w,h),a=s.data,d=o.data;d.set(a);const amount=.18;for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const p=(y*w+x)*4;for(let c=0;c<3;c++){const blur=(a[p-4+c]+a[p+4+c]+a[p-w*4+c]+a[p+w*4+c])/4;d[p+c]=Math.max(0,Math.min(255,a[p+c]+(a[p+c]-blur)*amount))}d[p+3]=a[p+3]}ctx.putImageData(o,0,0)}function canvasJpeg(c,q){return new Promise(r=>c.toBlob(r,'image/jpeg',q))}
+async function compressPdf(){if(!sourceDoc)return;if(skipSmall.checked&&sourceFile.size<1048576){alert('This PDF is already under 1 MB. Turn off the skip option if you still want to recompress it.');return}compressBtn.disabled=compressBtnMobile.disabled=true;outputBox.classList.remove('visible');progressWrap.classList.add('active');progressBar.style.width='2%';progressText.textContent='Starting compression engine…';compressBtnMobile.textContent='Starting…';await new Promise(r=>setTimeout(r,20));try{const dpi=+compressDpi.value,q=+compressQuality.value/100;let out=null;for(let n=1;n<=sourceDoc.numPages;n++){const pct=Math.round(((n-1)/sourceDoc.numPages)*92);progressBar.style.width=Math.max(3,pct)+'%';progressText.textContent=`Rendering page ${n} of ${sourceDoc.numPages}…`;compressBtnMobile.textContent=`Compressing ${n}/${sourceDoc.numPages}…`;await new Promise(r=>requestAnimationFrame(()=>r()));const p=await sourceDoc.getPage(n),base=p.getViewport({scale:1}),v=p.getViewport({scale:dpi/72}),c=document.createElement('canvas');c.width=Math.max(1,Math.floor(v.width));c.height=Math.max(1,Math.floor(v.height));const ctx=c.getContext('2d',{alpha:false,willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);await p.render({canvasContext:ctx,viewport:v}).promise;progressText.textContent=`Optimizing image data · page ${n}/${sourceDoc.numPages}…`;if(colorMode.value==='grayscale')gray(ctx,c.width,c.height);if(sharpen.checked)lightSharpen(ctx,c.width,c.height);const blob=await canvasJpeg(c,q),u=URL.createObjectURL(blob),img=await loadImg(u),w=base.width,h=base.height,ori=w>h?'landscape':'portrait';if(!out)out=new jsPDF({orientation:ori,unit:'pt',format:[w,h],compress:true,putOnlyUsedFonts:true});else out.addPage([w,h],ori);out.addImage(img,'JPEG',0,0,w,h,undefined,'FAST');URL.revokeObjectURL(u);c.width=c.height=1}progressBar.style.width='96%';progressText.textContent='Finalizing compressed PDF…';await new Promise(r=>setTimeout(r,30));compressedBlob=out.output('blob');compressedName=sourceFile.name.replace(/\.pdf$/i,'')+'-compressed.pdf';const saved=Math.round((1-compressedBlob.size/sourceFile.size)*100);outputStats.innerHTML=`Original: <strong>${fmt(sourceFile.size)}</strong><br>Compressed: <strong>${fmt(compressedBlob.size)}</strong><br>Result: <strong>${saved>=0?saved+'% smaller':Math.abs(saved)+'% larger'}</strong>`;if(compressedBlob.size>=sourceFile.size)outputStats.innerHTML+='<br><span style="color:var(--orange)">Try Balanced or Maximum Compression for a smaller file.</span>';outputBox.classList.add('visible');
+    progressBar.style.width='100%';progressText.textContent='Compression complete';
+    if(window.innerWidth<=920){
+      closeDrawers();
+      mobileResultInfo.innerHTML=outputStats.innerHTML;
+      requestAnimationFrame(()=>mobileResultModal.classList.add('open'));
+    };}catch(e){console.error(e);alert('PDF Wiz could not compress this file. Try a lower DPI or another PDF.')}finally{setTimeout(()=>progressWrap.classList.remove('active'),650);compressBtn.disabled=compressBtnMobile.disabled=!sourceDoc;compressBtnMobile.textContent='Compress PDF'}}compressBtn.onclick=compressPdf;compressBtnMobile.onclick=compressPdf;outputDownload.onclick=()=>{if(compressedBlob)dlBlob(compressedBlob,compressedName||'compressed.pdf')};
+
+const assetModal=document.getElementById('assetModal'),assetCanvas=document.getElementById('assetCanvas'),assetModalTitle=document.getElementById('assetModalTitle'),assetModalClose=document.getElementById('assetModalClose'),zoomIn=document.getElementById('zoomIn'),zoomOut=document.getElementById('zoomOut'),zoomReset=document.getElementById('zoomReset');
+let assetZoom=1,assetTarget=null,pinchStartDist=0,pinchStartZoom=1;
+function applyAssetZoom(){if(!assetTarget)return;assetTarget.style.transform=`scale(${assetZoom})`;zoomReset.textContent=Math.round(assetZoom*100)+'%'}
+function openImagePreview(item){assetCanvas.innerHTML='';const img=document.createElement('img');img.src=item.url;img.alt=item.file.name;img.style.maxWidth='90%';img.style.maxHeight='78vh';assetCanvas.appendChild(img);assetTarget=img;assetZoom=1;assetModalTitle.textContent=item.file.name;assetModal.classList.add('open');assetModal.setAttribute('aria-hidden','false');applyAssetZoom()}
+async function openPdfPreview(pageNo){if(!sourceDoc)return;assetCanvas.innerHTML='<div style="color:var(--muted);font-size:11px">Rendering preview…</div>';assetModalTitle.textContent=(sourceFile?sourceFile.name:'PDF')+' · Page '+pageNo;assetModal.classList.add('open');assetModal.setAttribute('aria-hidden','false');const page=await sourceDoc.getPage(pageNo),base=page.getViewport({scale:1}),scale=Math.min(2.2,Math.max(1.25,1200/base.width)),v=page.getViewport({scale}),c=document.createElement('canvas');c.width=Math.floor(v.width);c.height=Math.floor(v.height);await page.render({canvasContext:c.getContext('2d'),viewport:v}).promise;assetCanvas.innerHTML='';assetCanvas.appendChild(c);c.style.maxWidth='88%';assetTarget=c;assetZoom=1;applyAssetZoom()}
+function closeAssetPreview(){assetModal.classList.remove('open');assetModal.setAttribute('aria-hidden','true');assetCanvas.innerHTML='';assetTarget=null;assetZoom=1}
+assetModalClose.onclick=closeAssetPreview;assetModal.onclick=e=>{if(e.target===assetModal)closeAssetPreview()};zoomIn.onclick=()=>{assetZoom=Math.min(5,assetZoom+.25);applyAssetZoom()};zoomOut.onclick=()=>{assetZoom=Math.max(.25,assetZoom-.25);applyAssetZoom()};zoomReset.onclick=()=>{assetZoom=1;applyAssetZoom()};assetCanvas.addEventListener('wheel',e=>{if(!assetTarget)return;e.preventDefault();assetZoom=Math.max(.25,Math.min(5,assetZoom+(e.deltaY<0?.12:-.12)));applyAssetZoom()},{passive:false});assetCanvas.addEventListener('touchstart',e=>{if(e.touches.length===2){pinchStartDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchStartZoom=assetZoom}},{passive:true});assetCanvas.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinchStartDist){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);assetZoom=Math.max(.25,Math.min(5,pinchStartZoom*(d/pinchStartDist)));applyAssetZoom()}},{passive:true});
+const mobileResultModal=document.getElementById('mobileResultModal'),mobileResultInfo=document.getElementById('mobileResultInfo'),mobileResultBack=document.getElementById('mobileResultBack'),mobileResultDownload=document.getElementById('mobileResultDownload');
+mobileResultBack.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();mobileResultModal.classList.remove('open');window.scrollTo({top:0,behavior:'smooth'})});
+mobileResultDownload.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(!compressedBlob)return;const u=URL.createObjectURL(compressedBlob),a=document.createElement('a');a.href=u;a.download=compressedName||'compressed.pdf';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(u)},1200)});
+
+function updateTopCount(){if(activeTool==='home')topCount.textContent='2 tools';else if(activeTool==='image')topCount.textContent=images.length===1?'1 image':images.length+' images';else topCount.textContent=sourceDoc?(sourceDoc.numPages===1?'1 PDF page':sourceDoc.numPages+' PDF pages'):'0 PDF pages'}renderImages();goHome();
 </script>
 </body>
 </html>
